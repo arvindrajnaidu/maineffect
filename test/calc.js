@@ -1,6 +1,6 @@
 let chai = require('chai');
 let should = chai.should();
-let calc = require('../bootstrap');
+let calc = require('../calculator');
 
 describe('Calculator Functions', () => {
     describe('sum()', () => {
