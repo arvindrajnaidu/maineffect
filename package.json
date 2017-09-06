@@ -4,12 +4,15 @@
   "description": "Boilerplate for unit testing node.js applications",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --timeout 10000"
+    "test": "mocha --timeout 10000",
+    "test-dev": "nodemon --ext js --watch ./ --exec npm test --delay 1"
   },
   "keywords": [],
   "author": "mauricio.leyzaola[at]gmail.com",
   "license": "ISC",
   "dependencies": {
-    "chai": "4.1.2"
+    "chai": "4.1.2",
+    "mocha": "3.5.0",
+    "nodemon": "1.12.0"
   }
 }
