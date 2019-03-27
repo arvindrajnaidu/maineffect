@@ -31,4 +31,25 @@ describe('Calculator Functions', () => {
             expect(a).to.equal(12)
         });
     });
+
+    describe.only('doTaxes()', () => {
+        it('should return the doTaxes', async () => {
+            let a = await parsed.find('doTaxes')
+                .reDeclare('taxService', `5`)
+                .reDeclare('taxes', `5`)
+                .callWith(5)
+            expect(a).to.equal(5)
+        });
+
+        // it('should return the doTaxes', async () => {
+        //     let a = await parsed.find('doTaxes')
+        //         .reDeclare('taxService', `{
+        //             request: sinon.spy
+        //         }`)
+        //         .reDeclare('taxes', `5`)
+        //         .callWith(5)
+        //     expect(a).to.equal(5)
+        // });
+
+    });
 });

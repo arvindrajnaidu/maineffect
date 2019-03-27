@@ -12,4 +12,16 @@ const sumAsync = async (a, b) => {
     return foo
 }
 
-export default { sum, mul, sub, div, sumAsync }
+const doTaxes = async (bracket) => {
+	const taxService = servicecore.create('taxservice', {transport: 'ppaas'})
+	const taxes = await taxService.request('/api/v1/taxes', {
+		method: 'POST',
+		body: JSON.stringify({
+			bracket
+		})
+	})
+	return taxes
+}
+
+
+export default { sum, mul, sub, div, sumAsync, doTaxes }

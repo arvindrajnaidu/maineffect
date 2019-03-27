@@ -6,38 +6,51 @@ import traverse from 'traverse'
 import { expect } from 'chai'
 import fs from 'fs'
 
-export const parseFn = (fileName) => {
-    let code = fs.readFileSync(fileName, 'utf8')
-    let ans = esprima.parseModule(code)
+const CodeFragment = (scriptSrc, fnName = 'root') => {
+    const parsedCode = esprima.parseModule(scriptSrc)
     return {
-        find: (fnName) => {
-            let fn = traverse(ans).reduce(function (acc, x) {
+        find: (key) => {
+            const fn = traverse(parsedCode).reduce(function (acc, x) {
                 if (x && 
                     x.type === 'VariableDeclarator' &&
-                    x.id && x.id.name === fnName) {
+                    x.id && x.id.name === key) {
                     return x.init
                 }
                 return acc
             }, null)
-            let fnSrc = escodegen.generate(fn)
-            return {
-                callWith: (...args) => {
-                    // let testCode
-                    // if (fn.async) {
-                    // }
-                    let testCode = `
-                            (function () {
-                                const ${fnName} = ${fnSrc}
-                                return ${fnName}.call(null, ${args})
-                            })()
-                        `                    
-                    // console.log(testCode)
+            const fnSrc = escodegen.generate(fn)
+            return CodeFragment(fnSrc, key)
+        },
+        reDeclare: (key, replacement) => {
+            
+            const replacementObj = esprima.parseModule(`const __dhruv__ = ${replacement}`)
+                                    .body[0].declarations[0].init
 
-                    const script = new vm.Script(testCode)
-                    const context = vm.createContext({setTimeout})
-                    return script.runInNewContext(context)
+            const fn = traverse(parsedCode).map(function (x) {
+                if (x && 
+                    x.type === 'VariableDeclarator' &&
+                    x.id && x.id.name === key) {
+                    this.update({...x, init: replacementObj})
                 }
-            }
+            })
+            const fnSrc = escodegen.generate(fn)
+            return CodeFragment(fnSrc, key)
+        },
+        callWith: (...args) => {
+            let testCode = `
+                    (function () {
+                        const ${fnName} = ${scriptSrc}
+                        return ${fnName}.call(null, ${args})
+                    })()
+                `
+            const script = new vm.Script(testCode)
+            const context = vm.createContext({setTimeout})
+            return script.runInNewContext(context)
         }
     }
+}
+
+export const parseFn = (fileName) => {
+    let code = fs.readFileSync(fileName, 'utf8')
+    return CodeFragment(code)
 }
