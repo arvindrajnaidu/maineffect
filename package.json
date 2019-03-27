@@ -4,15 +4,24 @@
   "description": "Boilerplate for unit testing node.js applications",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --timeout 10000",
-    "test-dev": "nodemon --ext js --watch ./ --exec npm test --delay 1"
+    "test": "mocha --timeout 10000 --compilers js:@babel/register",
+    "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
   },
   "keywords": [],
   "author": "mauricio.leyzaola[at]gmail.com",
   "license": "ISC",
   "dependencies": {
-    "chai": "4.1.2",
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.4.0",
+    "@babel/preset-env": "^7.4.2",
+    "@babel/register": "^7.4.0",
+    "@babel/runtime": "^7.4.2",
+    "chai": "^4.2.0",
+    "child-process-fork-string": "^1.0.0",
+    "escodegen": "^1.11.1",
+    "esprima": "^4.0.1",
     "mocha": "3.5.0",
-    "nodemon": "1.12.0"
+    "nodemon": "1.12.0",
+    "traverse": "^0.6.6"
   }
 }
