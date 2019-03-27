@@ -6,8 +6,20 @@ import traverse from 'traverse'
 import { expect } from 'chai'
 import fs from 'fs'
 
+
 const CodeFragment = (scriptSrc, fnName = 'root') => {
     const parsedCode = esprima.parseModule(scriptSrc)
+    let exception
+
+    const __dhruv__context__ = {
+        setTimeout,
+        setException: (e) => {
+            exception = e
+        },
+        getException: () => {
+            return exception
+        }
+    }
     return {
         find: (key) => {
             const fn = traverse(parsedCode).reduce(function (acc, x) {
@@ -39,13 +51,22 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
         callWith: (...args) => {
             let testCode = `
                     (function () {
-                        const ${fnName} = ${scriptSrc}
-                        return ${fnName}.call(null, ${args})
+                        try {
+                            const ${fnName} = ${scriptSrc}
+                            return ${fnName}.call(null, ${args})    
+                        } catch (e) {
+                            setException(e)
+                        }
                     })()
                 `
             const script = new vm.Script(testCode)
-            const context = vm.createContext({setTimeout})
-            return script.runInNewContext(context)
+            // console.log(testCode)
+            const context = vm.createContext(__dhruv__context__)
+            const result = script.runInNewContext(context)
+            return {
+                result,
+                exception: __dhruv__context__.getException()
+            }
         }
     }
 }
