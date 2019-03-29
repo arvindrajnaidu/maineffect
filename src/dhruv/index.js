@@ -10,9 +10,7 @@ import fs from 'fs'
 
 const CodeFragment = (scriptSrc, fnName = 'root') => {
     
-    // console.log('>>>>', scriptSrc)
     const parsedCode = esprima.parseModule(scriptSrc)
-    // console.log(JSON.stringify(parsedCode))
     let exception
     let args
 
@@ -57,7 +55,7 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
             return this
         },
 
-        reDeclare: (key, replacement) => {
+        fold: (key, replacement) => {
             
             const replacementObj = esprima.parseModule(`const __dhruv__ = ${replacement}`)
                                     .body[0].declarations[0].init

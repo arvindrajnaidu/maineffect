@@ -35,8 +35,8 @@ describe('Calculator Functions', () => {
     describe('doTaxes1()', () => {
         it('should return the doTaxes1', async () => {
             let a = await parsed.find('doTaxes1')
-                .reDeclare('taxService', `5`)
-                .reDeclare('taxes', `5`)
+                .fold('taxService', `5`)
+                .fold('taxes', `5`)
                 .callWith(5).result
             expect(a).to.equal(5)
         });
@@ -44,9 +44,9 @@ describe('Calculator Functions', () => {
     describe('doTaxes2()', () => {
         it('should return the doTaxes', async () => {
             let e = await parsed.find('doTaxes2')
-                .reDeclare('taxService', `5`)
-                .reDeclare('logResult', `5`)
-                .reDeclare('taxesResult', `undefined`)
+                .fold('taxService', `5`)
+                .fold('logResult', `5`)
+                .fold('taxesResult', `undefined`)
                 .callWith(5)
                 .result
             expect(e).to.equal(null)
@@ -55,7 +55,7 @@ describe('Calculator Functions', () => {
     describe('throwUndefined()', () => {
         it('should return the throwUndefined', async () => {
             let e = await parsed.find('throwUndefined')
-                .reDeclare('foo', `undefined`)
+                .fold('foo', `undefined`)
                 .callWith(5).exception
             expect(!!e).to.equal(true)
         });
