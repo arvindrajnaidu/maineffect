@@ -13,7 +13,9 @@ describe('Handler Functions', () => {
         let loggerStub = sinon.stub()
         let statusStub = sinon.stub()
         let foo = handler
-                    .provide('logger', loggerStub)
+                    // .provide('logger', loggerStub)
+                    .destroy('logger')
+                    .destroy('res')
                     .callWith({
                     }, {
                         status: statusStub
@@ -24,7 +26,7 @@ describe('Handler Functions', () => {
             code: 400,
             json: { msg: 'No eventType found', skipTracking: true }
         })
-        expect(loggerStub.called).to.equal(true)
+        // expect(loggerStub.called).to.equal(true)
         expect(statusStub.called).to.equal(true)
     });
 });

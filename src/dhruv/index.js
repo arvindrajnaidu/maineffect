@@ -69,6 +69,23 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
             const fnSrc = escodegen.generate(fn)
             return CodeFragment(fnSrc, key)
         },
+        destroy: (key) => {     
+            const fn = traverse(parsedCode).map(function (x) {
+                if (x && 
+                    x.type === 'ExpressionStatement' &&
+                    x.expression && x.expression.type === 'CallExpression' &&
+                    (x.expression.callee && x.expression.callee.name === key ||
+                     x.expression.callee.object && x.expression.callee.object.name === key)
+                    ) {
+                    this.update({
+                        "type": "BlockStatement",
+                        "body": []
+                    })
+                }
+            })
+            const fnSrc = escodegen.generate(fn)
+            return CodeFragment(fnSrc, key)
+        },
         callWith: (...args) => {
             __dhruv__context__.setArgs(args)
 
@@ -82,7 +99,7 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
                         }
                     })()
                 `
-            // console.log(testCode)
+            console.log(testCode)
             const script = new vm.Script(testCode)
             // console.log(tempContext)
             const sb = vm.createContext({...tempContext, __dhruv__context__})

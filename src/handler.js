@@ -38,9 +38,10 @@ const creatorFunction = options => {
         json: { msg: 'No eventType found', skipTracking: true }
       }
 
-      logger(req, 'tracker_middleware_error', {
+      logger.error(req, 'tracker_middleware_error', {
         msg: result.msg
       })
+      
       
       res.status(result.code)
       // .json(result.json)
