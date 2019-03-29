@@ -1,6 +1,7 @@
 const esprima = require('esprima')
 const escodegen = require('escodegen')
 const vm = require('vm')
+const babelCore = require('@babel/core')
 
 import traverse from 'traverse'
 import { expect } from 'chai'
@@ -8,8 +9,12 @@ import fs from 'fs'
 
 
 const CodeFragment = (scriptSrc, fnName = 'root') => {
+    
+    // console.log('>>>>', scriptSrc)
     const parsedCode = esprima.parseModule(scriptSrc)
+    // console.log(JSON.stringify(parsedCode))
     let exception
+    let args
 
     const __dhruv__context__ = {
         setTimeout,
@@ -18,8 +23,18 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
         },
         getException: () => {
             return exception
+        },
+        setArgs: (fnArgs) => {
+            args = fnArgs
+        },
+        getArgs: () => {
+            return args
         }
     }
+    const tempContext = {
+
+    }
+
     return {
         find: (key) => {
             const fn = traverse(parsedCode).reduce(function (acc, x) {
@@ -33,6 +48,12 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
             const fnSrc = escodegen.generate(fn)
             return CodeFragment(fnSrc, key)
         },
+
+        provide: function (key, stub) {
+            tempContext[key] = stub
+            return this
+        },
+
         reDeclare: (key, replacement) => {
             
             const replacementObj = esprima.parseModule(`const __dhruv__ = ${replacement}`)
@@ -49,20 +70,23 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
             return CodeFragment(fnSrc, key)
         },
         callWith: (...args) => {
+            __dhruv__context__.setArgs(args)
+
             let testCode = `
                     (function () {
                         try {
                             const ${fnName} = ${scriptSrc}
-                            return ${fnName}.call(null, ${args})    
+                            return ${fnName}.apply(null, __dhruv__context__.getArgs())    
                         } catch (e) {
-                            setException(e)
+                            __dhruv__context__.setException(e)
                         }
                     })()
                 `
-            const script = new vm.Script(testCode)
             // console.log(testCode)
-            const context = vm.createContext(__dhruv__context__)
-            const result = script.runInNewContext(context)
+            const script = new vm.Script(testCode)
+            // console.log(tempContext)
+            const sb = vm.createContext({...tempContext, __dhruv__context__})
+            const result = script.runInNewContext(sb)
             return {
                 result,
                 exception: __dhruv__context__.getException()
@@ -74,4 +98,9 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
 export const parseFn = (fileName) => {
     let code = fs.readFileSync(fileName, 'utf8')
     return CodeFragment(code)
+    // const babelified = babelCore.transform(code, {
+    //     plugins: ["babel-plugin-transform-es2015-modules-commonjs-simple", "@babel/plugin-proposal-object-rest-spread"]
+    // })
+    // console.log(babelified.code)
+    // return CodeFragment(babelified.code)
 }
