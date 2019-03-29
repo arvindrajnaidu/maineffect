@@ -52,10 +52,10 @@ describe('Calculator Functions', () => {
             expect(e).to.equal(null)
         });
     });
-    describe('throwUndefined()', () => {
-        it('should return the throwUndefined', async () => {
-            let e = await parsed.find('throwUndefined')
-                .fold('foo', `undefined`)
+    describe('throwSomething()', () => {
+        it('should throw', async () => {
+            let e = await parsed.find('throwSomething')
+                .fold('foo', undefined)
                 .callWith(5).exception
             expect(!!e).to.equal(true)
         });

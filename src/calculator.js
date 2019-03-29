@@ -40,7 +40,7 @@ const doTaxes2 = async (bracket) => {
         return null
     }
 }
-const throwUndefined = (bracket) => {
+const throwSomething = (bracket) => {
     let foo
     return foo.bar
 }
