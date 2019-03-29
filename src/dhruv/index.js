@@ -16,8 +16,11 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
     let exception
     let args
 
+    const globals = {
+        setTimeout
+    }
+
     const __dhruv__context__ = {
-        setTimeout,
         setException: (e) => {
             exception = e
         },
@@ -99,10 +102,10 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
                         }
                     })()
                 `
-            console.log(testCode)
+            // console.log(testCode)
             const script = new vm.Script(testCode)
             // console.log(tempContext)
-            const sb = vm.createContext({...tempContext, __dhruv__context__})
+            const sb = vm.createContext({...globals, ...tempContext, __dhruv__context__})
             const result = script.runInNewContext(sb)
             return {
                 result,

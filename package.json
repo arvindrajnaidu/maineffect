@@ -1,28 +1,27 @@
 {
-  "name": "mocha_boilerplate",
+  "name": "dhruv",
   "version": "1.0.0",
-  "description": "Boilerplate for unit testing node.js applications",
+  "description": "A faster way to write unit tests",
   "main": "index.js",
   "scripts": {
     "test": "mocha --timeout 10000 --compilers js:@babel/register",
     "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
   },
-  "keywords": [],
-  "author": "mauricio.leyzaola[at]gmail.com",
-  "license": "ISC",
+  "keywords": ["unit", "test", "mock", "left"],
+  "author": "arvind.raj.naidu@gmail.com",
+  "license": "MIT",
   "dependencies": {
-    "@babel/cli": "^7.2.3",
     "@babel/core": "^7.4.0",
     "@babel/preset-env": "^7.4.2",
     "@babel/register": "^7.4.0",
-    "@babel/runtime": "^7.4.2",
-    "chai": "^4.2.0",
-    "child-process-fork-string": "^1.0.0",
     "escodegen": "^1.11.1",
     "esprima": "^4.0.1",
+    "traverse": "^0.6.6"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
     "mocha": "3.5.0",
     "nodemon": "1.12.0",
-    "sinon": "^7.3.1",
-    "traverse": "^0.6.6"
+    "sinon": "^7.3.1"
   }
 }

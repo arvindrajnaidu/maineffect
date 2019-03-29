@@ -9,13 +9,13 @@ describe('Handler Functions', () => {
         .find('creatorFunction')
         .find('handler')
     
-    it.only('should return error if tracking type is not found', () => {
+    it('should return error if tracking type is not found', () => {
         let loggerStub = sinon.stub()
         let statusStub = sinon.stub()
         let foo = handler
                     // .provide('logger', loggerStub)
                     .destroy('logger')
-                    .destroy('res')
+                    // .destroy('res')
                     .callWith({
                     }, {
                         status: statusStub
