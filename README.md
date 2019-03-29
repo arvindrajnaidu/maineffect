@@ -12,11 +12,11 @@ A faster way to write unit tests.
 **CallWith** Call with the arguments.
 
 ```
-\\ Calculator.js`
+\\ Calculator.js
 const  sum  = (a, b) =>  a  +  b
 
-\\ Calculator.test.js`
-const  parsed  =  parseFn(`${__dirname}/../src/calculator.js`)
+\\ Calculator.test.js
+const  parsed  =  parseFn(`${__dirname}/calculator.js`)
 
 describe('sum()', () => {
 	it('should return the sum of two numbers', () => {
@@ -29,14 +29,14 @@ describe('sum()', () => {
 ### Throws
 To test something that throws.
 ```
-\\ Thrower.js`
+\\ Thrower.js
 const throwUndefined = (bracket) => {
 	let foo
 	return foo.bar
 }
 
-\\ Thrower.test.js`
-const  parsed  =  parseFn(`${__dirname}/../src/thrower.js`)
+\\ Thrower.test.js
+const  parsed  =  parseFn(`${__dirname}/thrower.js`)
 
 describe('throwSomething()', () => {
 	it('should throw', () => {
@@ -61,7 +61,7 @@ const  sumAsync  =  async (a, b) => {
 }
 
 // SumAsync.test.js
-const  parsed  =  parseFn(`${__dirname}/../src/async.js`)
+const  parsed  =  parseFn(`${__dirname}/async.js`)
 
 describe('sumAsync()', () => {
 	it('should return the sumAsync of two numbers', async () => {
@@ -83,7 +83,7 @@ const handler  = (req, res) => {
 }
 
 // Handler.test.js
-const  parsed  =  parseFn(`${__dirname}/../src/Handler.js`)
+const  parsed  =  parseFn(`${__dirname}/Handler.js`)
 
 describe('handler()', () => {
 	parsed.find('handler')
@@ -108,7 +108,7 @@ const handler  = (req, res) => {
 
 // Handler.test.js
 import  sinon  from  'sinon'
-const  parsed  =  parseFn(`${__dirname}/../src/Handler.js`)
+const  parsed  =  parseFn(`${__dirname}/Handler.js`)
 
 describe('handler()', () => {
 	parsed.find('handler')
