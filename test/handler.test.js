@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import sinon from 'sinon'
 import { parseFn } from '../src/dhruv'
 
-const parsed = parseFn(`${__dirname}/../src/handler.js`)
+const parsed = parseFn(`${__dirname}/../src/examples/handler.js`)
 
 describe('Handler Functions', () => {
     const handler = parsed

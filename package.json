@@ -1,19 +1,31 @@
 {
   "name": "dhruv",
-  "version": "1.0.0",
-  "description": "A faster way to write unit tests",
-  "main": "index.js",
+  "version": "1.0.3",
+  "description": "Writing tests by redacting instead of mocking.",
+  "main": "dist/dhruv.js",
   "scripts": {
     "test": "mocha --timeout 10000 --compilers js:@babel/register",
     "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
   },
-  "keywords": ["unit", "test", "mock", "left"],
+  "browserslist": [
+    ">1%",
+    "last 4 versions",
+    "Firefox ESR",
+    "not ie < 9"
+  ],
+  "keywords": [
+    "unit",
+    "test",
+    "mock",
+    "left"
+  ],
   "author": "arvind.raj.naidu@gmail.com",
   "license": "MIT",
   "dependencies": {
     "@babel/core": "^7.4.0",
     "@babel/preset-env": "^7.4.2",
     "@babel/register": "^7.4.0",
+    "babel-loader": "^8.0.5",
     "escodegen": "^1.11.1",
     "esprima": "^4.0.1",
     "traverse": "^0.6.6"
@@ -22,6 +34,19 @@
     "chai": "^4.2.0",
     "mocha": "3.5.0",
     "nodemon": "1.12.0",
-    "sinon": "^7.3.1"
-  }
+    "sinon": "^7.3.1",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arvindrajnaidu/dhruv.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arvindrajnaidu/dhruv/issues"
+  },
+  "homepage": "https://github.com/arvindrajnaidu/dhruv#readme"
 }

@@ -2,8 +2,7 @@
 
 # Dhruv
 
-A faster way to write unit tests.
-
+Writing tests by redacting instead of mocking.
 
 ### Simple
 

@@ -1,12 +1,12 @@
 import { expect } from 'chai'
 import { parseFn } from '../src/dhruv'
 
-const parsed = parseFn(`${__dirname}/../src/calculator.js`)
+const parsed = parseFn(`${__dirname}/../src/examples/calculator.js`)
 
 describe('Calculator Functions', () => {
     describe('sum()', () => {
-        it('should return the sum of two numbers', () => {
-            let a = parsed.find('sum').callWith(1, 2).result
+        it.only('should return the sum of two numbers', () => {
+            let a = parsed.find('ju').find('sum').callWith(1, 2).result
             expect(a).to.equal(3)
         });
         it('should return the sum of two negative numbers', () => {

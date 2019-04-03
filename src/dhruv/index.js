@@ -1,15 +1,12 @@
 const esprima = require('esprima')
 const escodegen = require('escodegen')
 const vm = require('vm')
-const babelCore = require('@babel/core')
 
 import traverse from 'traverse'
 import { expect } from 'chai'
 import fs from 'fs'
 
-
 const CodeFragment = (scriptSrc, fnName = 'root') => {
-    
     const parsedCode = esprima.parseModule(scriptSrc)
     let exception
     let args
@@ -46,6 +43,9 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
                 }
                 return acc
             }, null)
+            if (!fn) {
+                throw new Error('Function not found')
+            }
             const fnSrc = escodegen.generate(fn)
             return CodeFragment(fnSrc, key)
         },
@@ -53,6 +53,10 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
         provide: function (key, stub) {
             tempContext[key] = stub
             return this
+        },
+
+        source: () => {
+            return scriptSrc
         },
 
         fold: (key, replacement) => {
@@ -100,7 +104,7 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
                         }
                     })()
                 `
-            // console.log(testCode)
+            // console.log(testCode, '<<< Test Code')
             const script = new vm.Script(testCode)
             // console.log(tempContext)
             const sb = vm.createContext({...globals, ...tempContext, __dhruv__context__})
@@ -121,4 +125,19 @@ export const parseFn = (fileName) => {
     // })
     // console.log(babelified.code)
     // return CodeFragment(babelified.code)
+}
+
+export const parseStr = (code) => {
+    // let code = fs.readFileSync(fileName, 'utf8')
+    return CodeFragment(code)
+    // const babelified = babelCore.transform(code, {
+    //     plugins: ["babel-plugin-transform-es2015-modules-commonjs-simple", "@babel/plugin-proposal-object-rest-spread"]
+    // })
+    // console.log(babelified.code)
+    // return CodeFragment(babelified.code)
+}
+
+export default {
+    parseFn,
+    parseStr
 }
