@@ -104,7 +104,7 @@ const CodeFragment = (scriptSrc, fnName = 'root') => {
                         }
                     })()
                 `
-            // console.log(testCode, '<<< Test Code')
+            console.log(testCode, '<<< Test Code')
             const script = new vm.Script(testCode)
             // console.log(tempContext)
             const sb = vm.createContext({...globals, ...tempContext, __dhruv__context__})

@@ -1,8 +1,8 @@
 {
-  "name": "dhruv",
+  "name": "mockoff",
   "version": "1.0.3",
   "description": "Writing tests by redacting instead of mocking.",
-  "main": "dist/dhruv.js",
+  "main": "dist/mockoff.js",
   "scripts": {
     "test": "mocha --timeout 10000 --compilers js:@babel/register",
     "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
@@ -43,10 +43,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/arvindrajnaidu/dhruv.git"
+    "url": "git+https://github.com/arvindrajnaidu/mockoff.git"
   },
   "bugs": {
-    "url": "https://github.com/arvindrajnaidu/dhruv/issues"
+    "url": "https://github.com/arvindrajnaidu/mockoff/issues"
   },
-  "homepage": "https://github.com/arvindrajnaidu/dhruv#readme"
+  "homepage": "https://github.com/arvindrajnaidu/mockoff#readme"
 }

@@ -10,7 +10,7 @@ const sub = (a, b) => a - b
 const div = (a, b) => a / b
 
 const sumAsync = async (a, b) => {
-    let foo = await new Promise((resolve, reject) => {
+    const foo = await new Promise((resolve, reject) => {
         setTimeout(() => resolve(a + b), 500)
     })
     return foo
@@ -44,7 +44,7 @@ const doTaxes2 = async (bracket) => {
     }
 }
 const throwSomething = (bracket) => {
-    let foo
+    const foo = undefined
     return foo.bar
 }
 

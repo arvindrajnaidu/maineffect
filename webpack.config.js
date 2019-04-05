@@ -7,11 +7,11 @@ const reStyle = /\.(css|less|styl|scss|sass|sss)$/;
 module.exports = {
     mode: 'production',
     target: 'node',
-    entry: './src/dhruv/index.js',
+    entry: './src/mockoff/index.js',
     output: {
-      filename: 'dhruv.js',
+      filename: 'mockoff.js',
       path: path.resolve(__dirname, 'dist'),
-      library: 'dhruv',
+      library: 'mockoff',
       libraryExport: 'default',
       libraryTarget: 'umd'
     },
