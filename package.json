@@ -4,7 +4,7 @@
   "description": "Writing tests by redacting instead of mocking.",
   "main": "dist/mockoff.js",
   "scripts": {
-    "test": "mocha --timeout 10000 --compilers js:@babel/register",
+    "test": "nyc mocha --timeout 10000 --compilers js:@babel/register",
     "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
   },
   "browserslist": [
@@ -28,15 +28,26 @@
     "babel-loader": "^8.0.5",
     "escodegen": "^1.11.1",
     "esprima": "^4.0.1",
+    "istanbul-api": "^2.1.1",
     "traverse": "^0.6.6"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "mocha": "3.5.0",
     "nodemon": "1.12.0",
+    "nyc": "^13.3.0",
     "sinon": "^7.3.1",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.0"
+  },
+  "nyc": {
+    "all": true,
+    "include": [
+      "**/*.test.js"
+    ],
+    "exclude": [
+      "src/**/*.js"
+    ]
   },
   "directories": {
     "test": "test"
