@@ -1,4 +1,4 @@
-// const sc = require('servicecore')
+const sc = require('servicecore')
 
 const sum = (a, b) => {
     if (a > 1) {

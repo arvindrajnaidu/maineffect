@@ -11,7 +11,7 @@ import fs from 'fs'
 
 const instrumenter = istanbul.createInstrumenter({esModules: true})
 
-const CodeFragment = (scriptSrc, instVar) => {
+const CodeFragment = (scriptSrc, sandbox) => {
     const parsedCode = esprima.parseModule(scriptSrc)
     let exception
     let args
@@ -60,7 +60,7 @@ const CodeFragment = (scriptSrc, instVar) => {
                 throw new Error('Function not found')
             }
             const fnSrc = escodegen.generate(fn)
-            return CodeFragment(fnSrc, instVar)
+            return CodeFragment(fnSrc, sandbox)
         },
 
         provide: function (key, stub) {
@@ -85,7 +85,7 @@ const CodeFragment = (scriptSrc, instVar) => {
                 }
             })
             const fnSrc = escodegen.generate(fn)
-            return CodeFragment(fnSrc, instVar)
+            return CodeFragment(fnSrc, sandbox)
         },
         destroy: (key) => {     
             const fn = traverse(parsedCode).map(function (x) {
@@ -102,75 +102,82 @@ const CodeFragment = (scriptSrc, instVar) => {
                 }
             })
             const fnSrc = escodegen.generate(fn)
-            return CodeFragment(fnSrc, instVar)
+            return CodeFragment(fnSrc, sandbox)
         },
         callWith: (...args) => {
             __dhruv__context__.setArgs(args)
-            const covVar = Object.keys(instVar)[0]
-
+            // console.log(scriptSrc)
             let testCode = `
                     (function () {
                         try {
                             ${scriptSrc}
                             const __dhruv_result__ = __evaluated__.apply(null, __dhruv__context__.getArgs())    
                             return {
-                                result: __dhruv_result__,
-                                // coverage: ${covVar}
+                                result: __dhruv_result__
                             }
                         } catch (e) {
                             return {
-                                exception: e,
-                                // coverage: ${covVar}
+                                exception: e
                             }
                         }
                     })()
                 `
-            const script = new vm.Script(testCode)
-            const sb = vm.createContext({...tempContext, __dhruv__context__, ...instVar})
-            const ctx = script.runInNewContext(sb)
             
-            console.log(ctx.exception, ctx.coverage)
+            const testResult = vm.runInNewContext(testCode, {...tempContext, __dhruv__context__, ...sandbox})
+            const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
+            const summary = coverage.createCoverageSummary()
 
-            // console.log(JSON.stringify(ctx.coverage))
+            coverageMap.files().forEach(function (f) {
+                var fc = coverageMap.fileCoverageFor(f),
+                s = fc.toSummary();
+                summary.merge(s);
+            });
 
-            // global.__coverage__ = ctx.__coverage__
-            
-            // const coverageMap = coverage.createCoverageMap(ctx.coverage)
-
-            // // console.log(JSON.stringify(coverageMap))
-            // const summary = coverage.createCoverageSummary()
-            // coverageMap.files().forEach(function (f) {
-            //     console.log(f)
-            //     var fc = coverageMap.fileCoverageFor(f),
-            //     s = fc.toSummary();
-            //     // console.log(s, f)
-            //     summary.merge(s);
-            // });
-
-            // console.log('Global summary', summary)
-            // console.log(ctx.coverage)
-            return {
-                result: ctx.result,
-                exception: ctx.exception
-            }
+            console.log('Global summary', summary)
+            // testResult.summary = summary
+            return testResult
         }
     }
 }
 
-export const parseFn = (fileName) => {
-    let code = fs.readFileSync(fileName, 'utf8')
-    let instrumentedCode = instrumenter.instrumentSync(code)
+export const removeFunctionCalls = (code) => {
+    const parsedCode = esprima.parseModule(code)
+    const fn = traverse(parsedCode).map(function (x) {
+        if (x && 
+            x.type === 'CallExpression') {
+                return {
+                    "type": "BlockStatement",
+                    "body": []
+                }
+        }
+        return x
+    }, null)
     
-    vm.runInThisContext(instrumentedCode)
+    return escodegen.generate(fn)
+}
 
-    const covVar = instrumentedCode.split('=')[0].replace('var ', '')
+export const parseFn = (fileName, options = { removeSideEffects: true, coverage : true}) => {
+    let code = fs.readFileSync(fileName, 'utf8')
+    
+    if (options.removeSideEffects) {
+        code = removeFunctionCalls(code)
+    }
 
-    const script = new vm.Script(`(function () {return ${covVar}})()`);
+    // Coverage
+    const instrumentedCode = instrumenter.instrumentSync(code)
 
-    const covVarObj = script.runInThisContext()
+    // console.log(instrumentedCode)
+    // const gcv = '__coverage__'
+    // var coverage = global[gcv] || (global[gcv] = {})    
 
-    console.log(covVarObj, '<<<')
-    return CodeFragment(instrumentedCode, {[covVar]: covVarObj})
+    const sb = vm.createContext()
+    vm.runInContext(instrumentedCode, sb)
+
+    // console.log(coverage)
+
+    return CodeFragment(instrumentedCode, sb)
+
+    // Babel
     // const babelified = babelCore.transform(code, {
     //     plugins: ["babel-plugin-transform-es2015-modules-commonjs-simple", "@babel/plugin-proposal-object-rest-spread"]
     // })

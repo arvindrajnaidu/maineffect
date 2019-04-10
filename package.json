@@ -4,7 +4,7 @@
   "description": "Writing tests by redacting instead of mocking.",
   "main": "dist/mockoff.js",
   "scripts": {
-    "test": "nyc mocha --timeout 10000 --compilers js:@babel/register",
+    "test": "mocha --timeout 10000 --compilers js:@babel/register",
     "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
   },
   "browserslist": [
@@ -43,10 +43,10 @@
   "nyc": {
     "all": true,
     "include": [
-      "**/*.test.js"
+      "src/examples/**/*.js"
     ],
     "exclude": [
-      "src/**/*.js"
+      "**/**.test.js"
     ]
   },
   "directories": {
