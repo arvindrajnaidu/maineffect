@@ -11,26 +11,15 @@ import fs from 'fs'
 
 const instrumenter = istanbul.createInstrumenter({esModules: true})
 
+const getReplacementKey = key => `__mockoff_${key}_replacement__`
+
 const CodeFragment = (scriptSrc, sandbox) => {
     const parsedCode = esprima.parseModule(scriptSrc)
     let exception
-    let args
 
     // const globals = {
     //     setTimeout
     // }
-
-    const __dhruv__context__ = {
-        setArgs: (fnArgs) => {
-            args = fnArgs
-        },
-        getArgs: () => {
-            return args
-        }
-    }
-    const tempContext = {
-
-    }
 
     return {
         find: (key) => {
@@ -52,7 +41,6 @@ const CodeFragment = (scriptSrc, sandbox) => {
                             ],
                             "kind": "const"
                         }
-                    // return x.init
                 }
                 return acc
             }, null)
@@ -64,7 +52,7 @@ const CodeFragment = (scriptSrc, sandbox) => {
         },
 
         provide: function (key, stub) {
-            tempContext[key] = stub
+            sandbox[key] = stub
             return this
         },
 
@@ -73,15 +61,17 @@ const CodeFragment = (scriptSrc, sandbox) => {
         },
 
         fold: (key, replacement) => {
-            
-            const replacementObj = esprima.parseModule(`const __dhruv__ = ${replacement}`)
-                                    .body[0].declarations[0].init
+            sandbox[getReplacementKey(key)] = replacement
 
             const fn = traverse(parsedCode).map(function (x) {
                 if (x && 
                     x.type === 'VariableDeclarator' &&
                     x.id && x.id.name === key) {
-                    this.update({...x, init: replacementObj})
+                    this.update({...x, init: {
+                            "type": "Identifier",
+                            "name": getReplacementKey(key)
+                        }
+                    })
                 }
             })
             const fnSrc = escodegen.generate(fn)
@@ -90,10 +80,21 @@ const CodeFragment = (scriptSrc, sandbox) => {
         destroy: (key) => {     
             const fn = traverse(parsedCode).map(function (x) {
                 if (x && 
-                    x.type === 'ExpressionStatement' &&
+                    (x.type === 'ExpressionStatement')&&
                     x.expression && x.expression.type === 'CallExpression' &&
                     (x.expression.callee && x.expression.callee.name === key ||
                      x.expression.callee.object && x.expression.callee.object.name === key)
+                    ) {
+                    this.update({
+                        "type": "BlockStatement",
+                        "body": []
+                    })
+                }
+                if (x && 
+                    (x.type === 'CallExpression')&&
+                    x.callee && 
+                    x.callee.type === 'Identifier' &&
+                    x.callee.name === key
                     ) {
                     this.update({
                         "type": "BlockStatement",
@@ -105,15 +106,14 @@ const CodeFragment = (scriptSrc, sandbox) => {
             return CodeFragment(fnSrc, sandbox)
         },
         callWith: (...args) => {
-            __dhruv__context__.setArgs(args)
-            // console.log(scriptSrc)
+            sandbox['__mockoff_args__'] = args
             let testCode = `
                     (function () {
                         try {
                             ${scriptSrc}
-                            const __dhruv_result__ = __evaluated__.apply(null, __dhruv__context__.getArgs())    
+                            const __mockoff_result__ = __evaluated__.apply(null, __mockoff_args__)   
                             return {
-                                result: __dhruv_result__
+                                result: __mockoff_result__
                             }
                         } catch (e) {
                             return {
@@ -122,60 +122,68 @@ const CodeFragment = (scriptSrc, sandbox) => {
                         }
                     })()
                 `
+            // console.log(tempContext, __mockoff__context__, sandbox, '::::::::')
             
-            const testResult = vm.runInNewContext(testCode, {...tempContext, __dhruv__context__, ...sandbox})
-            const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
-            const summary = coverage.createCoverageSummary()
+            const testResult = vm.runInNewContext(testCode, sandbox)
+            // console.log(testResult, '::::::<<<<<')
+            // const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
+            // const summary = coverage.createCoverageSummary()
 
-            coverageMap.files().forEach(function (f) {
-                var fc = coverageMap.fileCoverageFor(f),
-                s = fc.toSummary();
-                summary.merge(s);
-            });
+            // coverageMap.files().forEach(function (f) {
+            //     var fc = coverageMap.fileCoverageFor(f),
+            //     s = fc.toSummary();
+            //     summary.merge(s);
+            // });
 
-            console.log('Global summary', summary)
+            // console.log('Global summary', summary)
             // testResult.summary = summary
             return testResult
         }
     }
 }
 
-export const removeFunctionCalls = (code) => {
+export const removeFunctionCalls = (code, setupFn) => {
     const parsedCode = esprima.parseModule(code)
     const fn = traverse(parsedCode).map(function (x) {
         if (x && 
-            x.type === 'CallExpression') {
+            x.type === 'CallExpression' &&
+            x.callee &&
+            x.callee.type === 'Identifier' &&
+            (x.callee.name === 'require' || x.callee.name === setupFn)
+            ) {
                 return {
-                    "type": "BlockStatement",
-                    "body": []
+                    "type": "ObjectExpression",
+                    "properties": []
                 }
         }
+        if (x &&
+            x.type === 'ImportDeclaration') {
+                return {
+                    "type": "ObjectExpression",
+                    "properties": []
+                }
+        }
+
         return x
     }, null)
     
     return escodegen.generate(fn)
 }
 
-export const parseFn = (fileName, options = { removeSideEffects: true, coverage : true}) => {
+export const parseFn = (fileName, options = { removeSideEffects: true, coverage : true, setupFn: 'setup'}) => {
     let code = fs.readFileSync(fileName, 'utf8')
     
     if (options.removeSideEffects) {
-        code = removeFunctionCalls(code)
+        code = removeFunctionCalls(code, options.setupFn)
     }
 
-    // Coverage
-    const instrumentedCode = instrumenter.instrumentSync(code)
-
-    // console.log(instrumentedCode)
-    // const gcv = '__coverage__'
-    // var coverage = global[gcv] || (global[gcv] = {})    
-
     const sb = vm.createContext()
-    vm.runInContext(instrumentedCode, sb)
 
-    // console.log(coverage)
+    // Coverage
+    // const instrumentedCode = instrumenter.instrumentSync(code)
+    // vm.runInContext(instrumentedCode, sb)
 
-    return CodeFragment(instrumentedCode, sb)
+    return CodeFragment(code, sb)
 
     // Babel
     // const babelified = babelCore.transform(code, {
