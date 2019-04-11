@@ -1,6 +1,6 @@
 
 
-# Mockoff
+# Redact
 
 Writing tests by redacting instead of mocking.
 

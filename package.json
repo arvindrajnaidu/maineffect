@@ -1,8 +1,8 @@
 {
-  "name": "mockoff",
-  "version": "1.0.3",
+  "name": "redact",
+  "version": "0.0.1",
   "description": "Writing tests by redacting instead of mocking.",
-  "main": "dist/mockoff.js",
+  "main": "dist/redact.js",
   "scripts": {
     "test": "mocha --timeout 10000 --compilers js:@babel/register",
     "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
@@ -54,10 +54,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/arvindrajnaidu/mockoff.git"
+    "url": "git+https://github.com/arvindrajnaidu/redact.git"
   },
   "bugs": {
-    "url": "https://github.com/arvindrajnaidu/mockoff/issues"
+    "url": "https://github.com/arvindrajnaidu/redact/issues"
   },
-  "homepage": "https://github.com/arvindrajnaidu/mockoff#readme"
+  "homepage": "https://github.com/arvindrajnaidu/redact#readme"
 }

@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { parseFn } from '../src/mockoff'
+import { parseFn } from '../src/redact'
 
 const parsed = parseFn(`${__dirname}/../src/examples/wordgenerator.js`)
 
