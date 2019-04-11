@@ -7,11 +7,11 @@ const reStyle = /\.(css|less|styl|scss|sass|sss)$/;
 module.exports = {
     mode: 'production',
     target: 'node',
-    entry: './src/mockoff/index.js',
+    entry: './src/redact/index.js',
     output: {
-      filename: 'mockoff.js',
+      filename: 'redact.js',
       path: path.resolve(__dirname, 'dist'),
-      library: 'mockoff',
+      library: 'redact',
       libraryExport: 'default',
       libraryTarget: 'umd'
     },
