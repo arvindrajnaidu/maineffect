@@ -177,7 +177,7 @@ export const parseFn = (fileName, options = { removeSideEffects: true, coverage 
         code = removeFunctionCalls(code, options.setupFn)
     }
 
-    const sb = vm.createContext()
+    const sb = vm.createContext({setTimeout})
 
     // Coverage
     // const instrumentedCode = instrumenter.instrumentSync(code)

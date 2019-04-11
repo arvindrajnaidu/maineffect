@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { parseFn } from '../src/redact'
+import { parseFn } from '../src/maineffect'
 import sinon from 'sinon'
 
 const parsed = parseFn(`${__dirname}/../src/examples/lambda.js`)

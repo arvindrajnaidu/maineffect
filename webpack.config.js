@@ -7,11 +7,11 @@ const reStyle = /\.(css|less|styl|scss|sass|sss)$/;
 module.exports = {
     mode: 'production',
     target: 'node',
-    entry: './src/redact/index.js',
+    entry: './src/maineffect/index.js',
     output: {
-      filename: 'redact.js',
+      filename: 'maineffect.js',
       path: path.resolve(__dirname, 'dist'),
-      library: 'redact',
+      library: 'maineffect',
       libraryExport: 'default',
       libraryTarget: 'umd'
     },

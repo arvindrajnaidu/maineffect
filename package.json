@@ -1,8 +1,8 @@
 {
-  "name": "redact",
-  "version": "0.0.1",
+  "name": "maineffect",
+  "version": "0.0.2",
   "description": "Writing tests by redacting instead of mocking.",
-  "main": "dist/redact.js",
+  "main": "dist/maineffect.js",
   "scripts": {
     "test": "mocha --timeout 10000 --compilers js:@babel/register",
     "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
@@ -54,10 +54,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/arvindrajnaidu/redact.git"
+    "url": "git+https://github.com/arvindrajnaidu/maineffect.git"
   },
   "bugs": {
-    "url": "https://github.com/arvindrajnaidu/redact/issues"
+    "url": "https://github.com/arvindrajnaidu/maineffect/issues"
   },
-  "homepage": "https://github.com/arvindrajnaidu/redact#readme"
+  "homepage": "https://github.com/arvindrajnaidu/maineffect#readme"
 }

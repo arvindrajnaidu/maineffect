@@ -1,6 +1,5 @@
 
-
-# Redact
+# Main Effect
 
 Writing tests by redacting instead of mocking.
 
