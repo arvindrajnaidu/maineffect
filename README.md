@@ -122,3 +122,7 @@ describe('handler()', () => {
   })
 })
 ```
+
+## Build
+
+npx webpack --config webpack.config.js

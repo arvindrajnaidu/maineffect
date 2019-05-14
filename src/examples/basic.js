@@ -20,8 +20,7 @@ const pitcher = message => {
 }
 
 const pitcherAsync = async (message) => {
-    await new Promise((resolve, reject) => {
-        reject(message)
+    return await new Promise((resolve, reject) => {
+        return reject(message)
     })
-    return result
 }

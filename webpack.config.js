@@ -1,10 +1,7 @@
-const pkg = require('./package.json')
 
 const path = require('path');
-const reScript = /\.(js|jsx|mjs)$/;
-const reStyle = /\.(css|less|styl|scss|sass|sss)$/;
 
-module.exports = {
+const nodeConfig = {
     mode: 'production',
     target: 'node',
     entry: './src/maineffect/index.js',
@@ -30,3 +27,16 @@ module.exports = {
       ]
     }
 };
+
+const clientConfig = {
+  ...nodeConfig,
+  target: 'web',
+  output: {
+    ...nodeConfig.output,    
+    filename: 'maineffect.web.js',  
+  },
+  node: {
+    fs: 'empty',
+  }
+}
+module.exports = [nodeConfig, clientConfig]

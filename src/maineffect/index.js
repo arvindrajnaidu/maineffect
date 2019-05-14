@@ -2,16 +2,25 @@
 const esprima = require('esprima')
 const escodegen = require('escodegen')
 const vm = require('vm')
-const istanbul = require('istanbul-lib-instrument')
-const coverage = require('istanbul-lib-coverage')
+// const istanbul = require('istanbul-lib-instrument')
+// const coverage = require('istanbul-lib-coverage')
 
 import traverse from 'traverse'
-import { expect } from 'chai'
-import fs from 'fs'
+// import { expect } from 'chai'
 
-const instrumenter = istanbul.createInstrumenter({esModules: true})
+// const instrumenter = istanbul.createInstrumenter({esModules: true})
 
 const getReplacementKey = key => `__mockoff_${key}_replacement__`
+
+const getFirstIdentifier = (node) => {
+    let firstIdentifier = null
+    traverse(node).forEach((x) => {
+        if (!firstIdentifier && x.type === 'Identifier') {
+            firstIdentifier = x
+        }
+    })
+    return firstIdentifier
+}
 
 const CodeFragment = (scriptSrc, sandbox) => {
     const parsedCode = esprima.parseModule(scriptSrc)
@@ -79,28 +88,27 @@ const CodeFragment = (scriptSrc, sandbox) => {
         },
         destroy: (key) => {     
             const fn = traverse(parsedCode).map(function (x) {
-                if (x && 
-                    (x.type === 'ExpressionStatement')&&
-                    x.expression && x.expression.type === 'CallExpression' &&
-                    (x.expression.callee && x.expression.callee.name === key ||
-                     x.expression.callee.object && x.expression.callee.object.name === key)
-                    ) {
-                    this.update({
-                        "type": "BlockStatement",
-                        "body": []
-                    })
-                }
-                if (x && 
-                    (x.type === 'CallExpression')&&
-                    x.callee && 
-                    x.callee.type === 'Identifier' &&
-                    x.callee.name === key
-                    ) {
-                    this.update({
-                        "type": "BlockStatement",
-                        "body": []
-                    })
-                }
+                // if (x && 
+                //     (x.type === 'ExpressionStatement')&&
+                //     x.expression && x.expression.type === 'CallExpression' &&
+                //     (x.expression.callee && x.expression.callee.name === key ||
+                //      x.expression.callee.object && x.expression.callee.object.name === key)
+                //     ) {
+                //     this.update({
+                //         "type": "BlockStatement",
+                //         "body": []
+                //     })
+                // }
+                if (x && (x.type === 'CallExpression') && x.callee) {
+                    // Under this callee if the first identifier matches key ... destroy
+                    const firstIdentifierNode = getFirstIdentifier(x.callee)
+                    if (firstIdentifierNode && firstIdentifierNode.name === key) {
+                        this.update({
+                            "type": "BlockStatement",
+                            "body": []
+                        })
+                    }
+                } 
             })
             const fnSrc = escodegen.generate(fn)
             return CodeFragment(fnSrc, sandbox)
@@ -171,7 +179,14 @@ export const removeFunctionCalls = (code, setupFn) => {
 }
 
 export const parseFn = (fileName, options = { removeSideEffects: true, coverage : true, setupFn: 'setup'}) => {
-    let code = fs.readFileSync(fileName, 'utf8')
+    
+    let code
+    if (typeof fileName === 'function' ){
+        code = fileName.toString()
+    } else {
+        const fs = require('fs')
+        code = fs.readFileSync(fileName, 'utf8')
+    }
     
     if (options.removeSideEffects) {
         code = removeFunctionCalls(code, options.setupFn)
