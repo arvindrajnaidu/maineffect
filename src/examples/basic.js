@@ -20,7 +20,10 @@ const pitcher = message => {
 }
 
 const pitcherAsync = async (message) => {
-    return await new Promise((resolve, reject) => {
-        return reject(message)
+    const result = await new Promise((resolve, reject) => {
+        // setTimeout(() => {
+            return reject(new Error(message))
+        // }, 1000)
     })
+    return result
 }

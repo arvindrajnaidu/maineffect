@@ -119,7 +119,7 @@ const CodeFragment = (scriptSrc, sandbox) => {
                     (function () {
                         try {
                             ${scriptSrc}
-                            const __mockoff_result__ = __evaluated__.apply(null, __mockoff_args__)   
+                            const __mockoff_result__ = __evaluated__.apply(null, __mockoff_args__)
                             return {
                                 result: __mockoff_result__
                             }
@@ -130,6 +130,8 @@ const CodeFragment = (scriptSrc, sandbox) => {
                         }
                     })()
                 `
+            // console.log(testCode)
+            // console.log(sandbox.randomizer())
             // console.log(tempContext, __mockoff__context__, sandbox, '::::::::')
             
             const testResult = vm.runInNewContext(testCode, sandbox)
@@ -192,7 +194,7 @@ export const parseFn = (fileName, options = { removeSideEffects: true, coverage 
         code = removeFunctionCalls(code, options.setupFn)
     }
 
-    const sb = vm.createContext({setTimeout})
+    const sb = vm.createContext({setTimeout, console})
 
     // Coverage
     // const instrumentedCode = instrumenter.instrumentSync(code)

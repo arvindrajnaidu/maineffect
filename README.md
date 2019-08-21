@@ -1,128 +1,113 @@
-
 # Main Effect
 
 Writing tests by redacting instead of mocking.
 
-### Simple
+In software testing, each test exercises a particular branch of execution. Maineffect helps you isolate this branch for easier testing.
 
-**Parse** Parse the file.
-**Find** Find the node you want to test.
-**CallWith** Call with the arguments.
+### Installation
 
-```
-\\ Calculator.js
-const sum = (a, b) => a + b
+` $ npm install maineffect`
 
-\\ Calculator.test.js
-const parsed = parseFn(`${__dirname}/calculator.js`)
+### Quickstart
 
-describe('sum()', () => {
-  it('should return the sum of two numbers', () => {
-    let a = parsed.find('sum').callWith(1, 2).result
-    expect(a).to.equal(3)
-  });
-})
-```
+Let us go over some examples that explain the crux.
 
-### Throws
-To test something that throws.
-```
-\\ Thrower.js
-const throwUndefined = (bracket) => {
-  let foo
-  return foo.bar
-}
+#### Example #1
 
-\\ Thrower.test.js
-const parsed = parseFn(`${__dirname}/thrower.js`)
+**Parse** the file (Do not require or import). **Find** the function you want to test by name and **CallWith** the test arguments.
 
-describe('throwSomething()', () => {
-  it('should throw', () => {
-    let ex = parsed
-      .find('throwSomething')
-      .fold('foo', `undefined`)
-      .callWith(5)
-      .exception
-    expect(!!ex).to.equal(true)
-  })
-})
-```
+##### Calculator.js
+	const logger = import('Logger')
+	const sum = (a,b) => a + b
 
-### Async
-To test something async.
-```
-// SumAsync.js
-const sumAsync = async (a, b) => {
-  let foo = await new Promise((resolve, reject) => {
-    setTimeout(() => resolve(a + b), 500)
-  })
-  return foo
-}
+##### Calculator.test.js
 
-// SumAsync.test.js
-const parsed = parseFn(`${__dirname}/async.js`)
+	const {parseFn} = import 'maineffect'
+	const parsed = parseFn(`${__dirname}/calculator.js`)
 
-describe('sumAsync()', () => {
-  it('should return the sumAsync of two numbers', async () => {
-    let a = await parsed
-      .find('sumAsync')
-      .callWith(5, 7)
-      .result
-    expect(a).to.equal(12)
-  })
-})
-```
-### Destroy
-This destroys the Call Expression that starts with the `key`.
-```
-// Handler.js
-const handler = (req, res) => {
-  res.end()
-  return true
-}
+    describe('sum()', () => {
+		it('should return the sum of two numbers', () => {
+			let { result } = parsed.find('sum').callWith(1, 2)
+			expect(result).to.equal(3)
+		})
+	})
 
-// Handler.test.js
-const parsed = parseFn(`${__dirname}/Handler.js`)
+#### Explanation
+Here we wanted to test the **sum** function of **Calculator.js**. Generally we import the file into our test and call **sum**. Instead we parsed the raw file, and found the **sum** function and called it with the arguments.
 
-describe('handler()', () => {
-  parsed.find('handler')
-  it('should return true', () => {
-    let foo = handler
-      .destroy('res')
-      .callWith({}, {})
-      .result
-    expect(foo).to.equal(true)
-  })
-})
-```
-### Provide
-This reduces the Variable Declarator's initialization for the `key` to the the value provided.
+- We never had to import **Logger**. Awesome!
+- We did not even care if **sum** was exported. What?
+- And we still tested the function. Black Magic
 
-```
-// Handler.js
-const handler = (req, res) => {
-  res.end()
-  return true
-}
+#### How it works
+We simply parse the raw text of the js file to get the [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree "AST"). In that we **find** the node with name **sum**. Then we generate code with that node. We test this code that we generated, not the original file.
 
-// Handler.test.js
-import sinon from 'sinon'
-const parsed = parseFn(`${__dirname}/Handler.js`)
+##### Example #2
+**Provide** a variable with any value. **Fold** stuff you don't care about. **Destroy** function calls that are useless for the test.
 
-describe('handler()', () => {
-  parsed.find('handler')
-  it('should return true', () => {
-    let resStub = sinon.stub()
-    let foo = handler
-      .provide('res', resStub)
-      .callWith({}, {})
-      .result
-    expect(resStub.called).to.equal(true)
-    expect(foo).to.equal(true)
-  })
-})
-```
+		// Casino.js
+		import log from 'Logger'
+		import fetch from './fetcher'
+		import randomizer from 'randomizer'
 
-## Build
+		const handler = async (req, res) => {
+			log.info('Inside handler')
+			const myName = await fetch('/name/me')
+			const luckyNumber = randomizer().get()
+			let message = `Hello ${req.query.user}. I am ${myName}. Your lucky number is ${luckyNumber}`
+			return res.send(message)
+		}
 
+		export default handler
+
+		// Casino.test.js
+		import { expect } from 'chai'
+		import { stub } from 'sinon'
+		import { parseFn } from '../src/maineffect'
+
+		const parsed = parseFn(`${__dirname}/../src/examples/handler.js`)
+
+		describe.only('Handler Functions', () => {
+			describe('handler()', () => {
+				const handler = parsed.find('handler')
+				it('should return undefined', async () => {
+					const sendStub = stub()
+					const result = await handler
+														.destroy('log')
+														.fold('myName', 'Joe')
+														.provide('randomizer', () => ({ get: () => 1}))                              
+														.callWith({query: {user: 'James'}}, {send: sendStub})
+														.result
+					const expected = `Hello James. I am Joe. Your lucky number is 1`
+					expect(sendStub.calledWithExactly(expected)).to.equal(true)
+					expect(result).to.equal(undefined)
+				})
+			})
+		})
+
+#### Explanation
+Here we want to test the **handler** function of **Casino.js**. The function takes **request** and **response** objects as arguments. Logs something, fetches a name asynchronously, gets a random number and assembles a message. It writes this message to the response.
+
+- Instead of stubbing **log.info** to behavior we don't really care. We **destroy** that call. Boom!
+- All we care about is the value of **myName**. We are not here to test fetch. So let us **fold** the right-hand-side of that assignment to a value we like. Wait you could do that?
+- Finally it the function needs a randomizer function. Let us **provide** it to the execution environment. This is cheating.
+- And we still tested the function. Voodoo shit.
+
+## Development
+### Build
 npx webpack --config webpack.config.js
+
+### Test
+yarn run test
+
+### Test in Developer mode
+yarn run test-dev
+
+## Contact
+Reach out to me at @buzzarvind on Twitter for anything. I'll do my best to help out.
+
+## License
+
+[The MIT License](http://opensource.org/licenses/MIT)
+
+Copyright (c) 2019-2019 Arvind Naidu <[http://twitter.com/buzzarvind](http://twitter.com/buzzarvind)>
