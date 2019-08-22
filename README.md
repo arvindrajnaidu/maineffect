@@ -110,4 +110,4 @@ Reach out to me at @buzzarvind on Twitter for anything. I'll do my best to help 
 
 [The MIT License](http://opensource.org/licenses/MIT)
 
-Copyright (c) 2019-2019 Arvind Naidu <[http://twitter.com/buzzarvind](http://twitter.com/buzzarvind)>
+Copyright (c) 2019-2019 Arvind Naidu [https://twitter.com/buzzarvind](https://twitter.com/buzzarvind)

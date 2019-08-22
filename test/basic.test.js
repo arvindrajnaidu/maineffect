@@ -1,9 +1,9 @@
 import { expect } from 'chai'
 import { parseFn } from '../src/maineffect'
 
-const parsed = parseFn(`${__dirname}/../src/examples/basic.js`)
-
 describe('Basic Functions', () => {
+    const parsed = parseFn(`${__dirname}/../src/examples/basic.js`)
+    
     describe('sum()', () => {
         it('should return the sum of two numbers', () => {
             const result = parsed
@@ -33,7 +33,7 @@ describe('Basic Functions', () => {
     describe('pitcherAsync()', () => {
         it('should throw an error with the argument as message', async () => {
             try {
-                await parsed
+                const result = await parsed
                         .find('pitcherAsync')
                         .callWith('foo')
                         .result

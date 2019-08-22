@@ -1,14 +1,14 @@
 
+import traverse from 'traverse'
 const esprima = require('esprima')
 const escodegen = require('escodegen')
 const vm = require('vm')
-// const istanbul = require('istanbul-lib-instrument')
-// const coverage = require('istanbul-lib-coverage')
+const istanbul = require('istanbul-lib-instrument')
+const coverage = require('istanbul-lib-coverage')
 
-import traverse from 'traverse'
-// import { expect } from 'chai'
 
-// const instrumenter = istanbul.createInstrumenter({esModules: true})
+
+const instrumenter = istanbul.createInstrumenter({esModules: true, compact: false})
 
 const getReplacementKey = key => `__mockoff_${key}_replacement__`
 
@@ -22,13 +22,21 @@ const getFirstIdentifier = (node) => {
     return firstIdentifier
 }
 
+export const getCoverage = () => {
+    const coverageMap = global.coverageMap
+    const summary = coverage.createCoverageSummary()
+
+    coverageMap.files().forEach(function (f) {
+        var fc = coverageMap.fileCoverageFor(f),
+        s = fc.toSummary();
+        summary.merge(s);
+    });
+    return summary
+}
+
 const CodeFragment = (scriptSrc, sandbox) => {
     const parsedCode = esprima.parseModule(scriptSrc)
     let exception
-
-    // const globals = {
-    //     setTimeout
-    // }
 
     return {
         find: (key) => {
@@ -76,6 +84,32 @@ const CodeFragment = (scriptSrc, sandbox) => {
                 if (x && 
                     x.type === 'VariableDeclarator' &&
                     x.id && x.id.name === key) {
+                    
+                    // Check for coverage variables
+                    if (x.init && 
+                        x.init.type === 'SequenceExpression' &&
+                        x.init.expressions &&
+                        x.init.expressions[0] &&
+                        x.init.expressions[0].type === 'UpdateExpression' &&
+                        x.init.expressions[0].operator === '++' &&
+                        x.init.expressions[0].argument.object &&
+                        x.init.expressions[0].argument.object.object &&
+                        x.init.expressions[0].argument.object.object.name &&
+                        x.init.expressions[0].argument.object.object.name.indexOf('cov_') === 0 &&
+                        x.init.expressions[0].argument.object.property.name === 's'
+                        ) {
+                        return this.update({...x, init: {
+                            "type": "SequenceExpression",
+                            "expressions": [
+                                x.init.expressions[0],
+                                {
+                                    "type": "Identifier",
+                                    "name": getReplacementKey(key)
+                                }  
+                            ]}
+                        })
+                    }
+
                     this.update({...x, init: {
                             "type": "Identifier",
                             "name": getReplacementKey(key)
@@ -88,17 +122,6 @@ const CodeFragment = (scriptSrc, sandbox) => {
         },
         destroy: (key) => {     
             const fn = traverse(parsedCode).map(function (x) {
-                // if (x && 
-                //     (x.type === 'ExpressionStatement')&&
-                //     x.expression && x.expression.type === 'CallExpression' &&
-                //     (x.expression.callee && x.expression.callee.name === key ||
-                //      x.expression.callee.object && x.expression.callee.object.name === key)
-                //     ) {
-                //     this.update({
-                //         "type": "BlockStatement",
-                //         "body": []
-                //     })
-                // }
                 if (x && (x.type === 'CallExpression') && x.callee) {
                     // Under this callee if the first identifier matches key ... destroy
                     const firstIdentifierNode = getFirstIdentifier(x.callee)
@@ -130,23 +153,16 @@ const CodeFragment = (scriptSrc, sandbox) => {
                         }
                     })()
                 `
-            // console.log(testCode)
-            // console.log(sandbox.randomizer())
-            // console.log(tempContext, __mockoff__context__, sandbox, '::::::::')
             
             const testResult = vm.runInNewContext(testCode, sandbox)
-            // console.log(testResult, '::::::<<<<<')
-            // const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
-            // const summary = coverage.createCoverageSummary()
+            const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
 
-            // coverageMap.files().forEach(function (f) {
-            //     var fc = coverageMap.fileCoverageFor(f),
-            //     s = fc.toSummary();
-            //     summary.merge(s);
-            // });
+            if (!global.coverageMap) {
+                global.coverageMap = coverageMap
+            } else {
+                global.coverageMap.merge(coverageMap)
+            }
 
-            // console.log('Global summary', summary)
-            // testResult.summary = summary
             return testResult
         }
     }
@@ -173,6 +189,17 @@ export const removeFunctionCalls = (code, setupFn) => {
                     "properties": []
                 }
         }
+        if (x &&
+            x.type === 'ExportDefaultDeclaration') {
+                return {
+                    "type": "ObjectExpression",
+                    "properties": []
+                }
+        }
+        if (x &&
+            x.type === 'ExportNamedDeclaration') {
+            return x.declaration
+        }
 
         return x
     }, null)
@@ -180,7 +207,10 @@ export const removeFunctionCalls = (code, setupFn) => {
     return escodegen.generate(fn)
 }
 
-export const parseFn = (fileName, options = { removeSideEffects: true, coverage : true, setupFn: 'setup'}) => {
+export const parseFn = (fileName, options = { 
+        removeSideEffects: true, 
+        setupFn: 'setup',
+    }) => {
     
     let code
     if (typeof fileName === 'function' ){
@@ -194,33 +224,14 @@ export const parseFn = (fileName, options = { removeSideEffects: true, coverage 
         code = removeFunctionCalls(code, options.setupFn)
     }
 
-    const sb = vm.createContext({setTimeout, console})
+    const sb = vm.createContext({setTimeout, console, __coverage__: global.__coverage__})
 
     // Coverage
-    // const instrumentedCode = instrumenter.instrumentSync(code)
-    // vm.runInContext(instrumentedCode, sb)
-
-    return CodeFragment(code, sb)
-
-    // Babel
-    // const babelified = babelCore.transform(code, {
-    //     plugins: ["babel-plugin-transform-es2015-modules-commonjs-simple", "@babel/plugin-proposal-object-rest-spread"]
-    // })
-    // console.log(babelified.code)
-    // return CodeFragment(babelified.code)
-}
-
-export const parseStr = (code) => {
-    // let code = fs.readFileSync(fileName, 'utf8')
-    return CodeFragment(code)
-    // const babelified = babelCore.transform(code, {
-    //     plugins: ["babel-plugin-transform-es2015-modules-commonjs-simple", "@babel/plugin-proposal-object-rest-spread"]
-    // })
-    // console.log(babelified.code)
-    // return CodeFragment(babelified.code)
+    const instrumentedCode = instrumenter.instrumentSync(code, fileName)
+    vm.runInContext(instrumentedCode, sb)    
+    return CodeFragment(instrumentedCode, sb)   
 }
 
 export default {
-    parseFn,
-    parseStr
+    parseFn
 }

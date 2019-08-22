@@ -2,17 +2,22 @@ import { expect } from 'chai'
 import { stub } from 'sinon'
 import { parseFn } from '../src/maineffect'
 
-const parsed = parseFn(`${__dirname}/../src/examples/handler.js`)
+describe('casino', () => {
+    const parsed = parseFn(`${__dirname}/../src/examples/casino.js`)
 
-describe('Handler Functions', () => {
     describe('handler()', () => {
         const handler = parsed.find('handler')
         it('should return undefined', async () => {
             const sendStub = stub()
+
+            // console.log(handler
+            //     .destroy('log').source())
+            
+            // console.log(handler.destroy('log').fold('myName', 'Joe').provide('randomizer', () => 1).source())
             const result = await handler
                                     .destroy('log')
                                     .fold('myName', 'Joe')
-                                    .provide('randomizer', () => ({ get: () => 1}))                              
+                                    .provide('randomizer', () => 1)                              
                                     .callWith({query: {user: 'James'}}, {send: sendStub})
                                     .result
             const expected = `Hello James. I am Joe. Your lucky number is 1`
