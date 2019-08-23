@@ -3,6 +3,7 @@ import traverse from 'traverse'
 const esprima = require('esprima')
 const escodegen = require('escodegen')
 const vm = require('vm')
+
 const istanbul = require('istanbul-lib-instrument')
 const coverage = require('istanbul-lib-coverage')
 import { create } from 'istanbul-reports'
