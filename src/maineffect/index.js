@@ -5,8 +5,8 @@ const escodegen = require('escodegen')
 const vm = require('vm')
 const istanbul = require('istanbul-lib-instrument')
 const coverage = require('istanbul-lib-coverage')
-
-
+import { create } from 'istanbul-reports'
+import libReport from  'istanbul-lib-report'
 
 const instrumenter = istanbul.createInstrumenter({esModules: true, compact: false})
 
@@ -22,16 +22,12 @@ const getFirstIdentifier = (node) => {
     return firstIdentifier
 }
 
-export const getCoverage = () => {
-    const coverageMap = global.coverageMap
-    const summary = coverage.createCoverageSummary()
-
-    coverageMap.files().forEach(function (f) {
-        var fc = coverageMap.fileCoverageFor(f),
-        s = fc.toSummary();
-        summary.merge(s);
-    });
-    return summary
+export const getCoverage = (reporter, config) => {
+    const context = libReport.createContext({
+        coverageMap: global.coverageMap
+    })    
+    const created = create(reporter, config)
+    return created.execute(context)
 }
 
 const CodeFragment = (scriptSrc, sandbox) => {
@@ -211,7 +207,6 @@ export const parseFn = (fileName, options = {
         removeSideEffects: true, 
         setupFn: 'setup',
     }) => {
-    
     let code
     if (typeof fileName === 'function' ){
         code = fileName.toString()
@@ -232,6 +227,12 @@ export const parseFn = (fileName, options = {
     return CodeFragment(instrumentedCode, sb)   
 }
 
+export const parseStr = (code) => {
+    return CodeFragment(code)
+}
+
+
 export default {
-    parseFn
+    parseFn,
+    parseStr
 }

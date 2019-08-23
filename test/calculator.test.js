@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { parseFn, getCoverage } from '../src/maineffect'
+import { parseFn } from '../src/maineffect'
 
 describe('sum()', () => {
     const parsed = parseFn(`${__dirname}/../src/examples/calculator.js`)

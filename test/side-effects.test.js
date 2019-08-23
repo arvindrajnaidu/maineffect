@@ -10,10 +10,14 @@ describe('Side Effects', () => {
             expect(result).to.equal('foo')
         });
     });
-    // describe('generateFooService()', () => {
-    //     it('should return a word using a service', async () => {
-    //         const result = await parsed.find('generateFooService').callWith().result
-    //         expect(result).to.equal('foo')
-    //     });
-    // });
+    describe('generateFooService()', () => {
+        it('should return a word using a service', async () => {
+            const result = await parsed
+                                    .find('generateFooService')
+                                    .provide('wordService', {generateFoo: () => 'foo'})
+                                    .callWith()
+                                    .result
+            expect(result).to.equal('foo')
+        });
+    });
 });

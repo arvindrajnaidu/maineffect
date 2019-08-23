@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { parseFn } from '../src/maineffect'
 
-describe('Basic Functions', () => {
+describe('basic', () => {
     const parsed = parseFn(`${__dirname}/../src/examples/basic.js`)
     
     describe('sum()', () => {

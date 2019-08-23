@@ -9,11 +9,6 @@ describe('casino', () => {
         const handler = parsed.find('handler')
         it('should return undefined', async () => {
             const sendStub = stub()
-
-            // console.log(handler
-            //     .destroy('log').source())
-            
-            // console.log(handler.destroy('log').fold('myName', 'Joe').provide('randomizer', () => 1).source())
             const result = await handler
                                     .destroy('log')
                                     .fold('myName', 'Joe')
