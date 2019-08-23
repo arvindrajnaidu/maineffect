@@ -43,8 +43,8 @@ describe('basic', () => {
         })
     })
     describe('copyUserObject()', () => {
-        it('should support spread operation correctly', async () => {
-            const result = await parsed
+        it('should support spread operation correctly', () => {
+            const result = parsed
                     .find('copyUserObject')
                     .callWith({name: 'blah', age: 950}, 'amazon')
                     .result
