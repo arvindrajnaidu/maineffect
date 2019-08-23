@@ -3,6 +3,7 @@ import traverse from 'traverse'
 const acorn = require('acorn')
 const escodegen = require('escodegen')
 const vm = require('vm')
+
 const istanbul = require('istanbul-lib-instrument')
 const coverage = require('istanbul-lib-coverage')
 import { create } from 'istanbul-reports'
@@ -10,7 +11,7 @@ import libReport from  'istanbul-lib-report'
 
 const instrumenter = istanbul.createInstrumenter({esModules: true, compact: false})
 
-const getReplacementKey = key => `__mockoff_${key}_replacement__`
+const getReplacementKey = key => `__maineffect_${key}_replacement__`
 
 const getFirstIdentifier = (node) => {
     let firstIdentifier = null
@@ -24,7 +25,7 @@ const getFirstIdentifier = (node) => {
 
 export const getCoverage = (reporter, config) => {
     const context = libReport.createContext({
-        coverageMap: global.coverageMap
+        coverageMap: global.__mainEffect_coverageMap__
     })    
     const created = create(reporter, config)
     return created.execute(context)
@@ -133,14 +134,14 @@ const CodeFragment = (scriptSrc, sandbox) => {
             return CodeFragment(fnSrc, sandbox)
         },
         callWith: (...args) => {
-            sandbox['__mockoff_args__'] = args
+            sandbox['__maineffect_args__'] = args
             let testCode = `
                     (function () {
                         try {
                             ${scriptSrc}
-                            const __mockoff_result__ = __evaluated__.apply(null, __mockoff_args__)
+                            const __maineffect_result__ = __evaluated__.apply(null, __maineffect_args__)
                             return {
-                                result: __mockoff_result__
+                                result: __maineffect_result__
                             }
                         } catch (e) {
                             return {
@@ -153,10 +154,10 @@ const CodeFragment = (scriptSrc, sandbox) => {
             const testResult = vm.runInNewContext(testCode, sandbox)
             const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
 
-            if (!global.coverageMap) {
-                global.coverageMap = coverageMap
+            if (!global.__mainEffect_coverageMap__) {
+                global.__mainEffect_coverageMap__ = coverageMap
             } else {
-                global.coverageMap.merge(coverageMap)
+                global.__mainEffect_coverageMap__.merge(coverageMap)
             }
 
             return testResult
@@ -219,7 +220,7 @@ export const parseFn = (fileName, options = {
         code = removeFunctionCalls(code, options.setupFn)
     }
 
-    const sb = vm.createContext({setTimeout, console, __coverage__: global.__coverage__})
+    const sb = vm.createContext({setTimeout, console})
 
     // Coverage
     const instrumentedCode = instrumenter.instrumentSync(code, fileName)
