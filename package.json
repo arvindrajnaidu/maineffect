@@ -1,11 +1,12 @@
 {
   "name": "maineffect",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "Writing tests by redacting instead of mocking.",
   "main": "dist/maineffect.js",
   "scripts": {
     "test": "mocha --timeout 10000 --compilers js:@babel/register",
-    "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch"
+    "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch",
+    "build": "npx webpack --config webpack.config.js"
   },
   "browserslist": [
     ">1%",
