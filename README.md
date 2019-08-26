@@ -75,11 +75,15 @@ We simply parse the raw text of the js file to get the [AST](https://en.wikipedi
 				it('should return undefined', async () => {
 					const sendStub = stub()
 					const result = await handler
-														.destroy('log')
-														.fold('dealerName', 'Joe')
-														.provide('randomizer', () => 1)
-														.callWith({query: {user: 'James'}}, {send: sendStub})
-														.result
+											.destroy('log')
+											.fold('dealerName', 'Joe')
+											.provide('randomizer', () => 1)
+											.callWith({
+												query: {
+													user: 'James'
+												}
+											}, {send: sendStub})
+											.result
 					const expected = `Hello James. I am Joe. Your lucky number is 1`
 					expect(sendStub.calledWithExactly(expected)).to.equal(true)
 				})
@@ -87,11 +91,11 @@ We simply parse the raw text of the js file to get the [AST](https://en.wikipedi
 		})
 
 #### Explanation
-Here, we want to test the **handler** function of **Casino.js**. The function takes **request** and **response** objects as arguments. Logs something, fetches a name asynchronously, gets a random number and assembles a message. It writes this message to the response.
+Here, we want to test the **handler** function of **Casino.js**. The function takes **request** and **response** objects as arguments. Logs something, fetches a name asynchronously, gets a random number and assembles a message. Finally, it writes this message to the response.
 
-- Instead of stubbing **log.info** to behavior we don't really care. We **destroy** that call. *Boom!*
+- Instead of stubbing **log.info**, we **destroy** that call. *Boom!*
 - All we care about is the value of **dealerName**. We are not here to test fetch. So let us **fold** the right-hand-side of that assignment to a value we like. *Wait you could do that?*
-- Finally it the function needs a randomizer function. Let us **provide** it to the execution environment. *This is cheating.*
+- Finally we need a randomizer function. Let us **provide** it to the execution environment. *This is cheating.*
 - And we still tested the function. *Voodoo shit.*
 
 ## Development
