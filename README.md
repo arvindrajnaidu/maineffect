@@ -74,15 +74,15 @@ export default handler
 		it('should return undefined', async () => {
 			const sendStub = stub()
 			const result = await handler
-									.destroy('log')
-									.fold('dealerName', 'Joe')
-									.provide('randomizer', () => 1)
-									.callWith({
-										query: {
-											user: 'James'
-										}
-									}, {send: sendStub})
-									.result
+				.destroy('log')
+				.fold('dealerName', 'Joe')
+				.provide('randomizer', () => 1)
+				.callWith({
+					query: {
+						user: 'James'
+					}
+				}, {send: sendStub})
+				.result
 			const expected = `Hello James. I am Joe. Your lucky number is 1`
 			expect(sendStub.calledWithExactly(expected)).to.equal(true)
 		})
