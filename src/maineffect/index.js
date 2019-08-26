@@ -1,6 +1,6 @@
 
 import traverse from 'traverse'
-const esprima = require('esprima')
+const acorn = require('acorn')
 const escodegen = require('escodegen')
 const vm = require('vm')
 
@@ -32,7 +32,7 @@ export const getCoverage = (reporter, config) => {
 }
 
 const CodeFragment = (scriptSrc, sandbox) => {
-    const parsedCode = esprima.parseModule(scriptSrc)
+    const parsedCode = acorn.parse(scriptSrc, {sourceType: 'module'})
     let exception
 
     return {
@@ -166,7 +166,7 @@ const CodeFragment = (scriptSrc, sandbox) => {
 }
 
 export const removeFunctionCalls = (code, setupFn) => {
-    const parsedCode = esprima.parseModule(code)
+    const parsedCode = acorn.parse(code, {sourceType: 'module'})
     const fn = traverse(parsedCode).map(function (x) {
         if (x && 
             x.type === 'CallExpression' &&

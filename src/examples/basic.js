@@ -19,3 +19,9 @@ const pitcherAsync = async (message) => {
         }, 0)
     })
 }
+
+const copyUserObject = (user, newName) => {
+  const newUser = {...user}
+  newUser.name = newName
+  return newUser
+}
