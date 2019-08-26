@@ -18,20 +18,20 @@ Let us dive right in with some examples.
 
 ##### Calculator.js
 
-const logger = import('Logger')
-const sum = (a,b) => a + b
+	const logger = import('Logger')
+	const sum = (a,b) => a + b
 
 ##### Calculator.test.js
 
-const {parseFn} = import 'maineffect'
-const parsed = parseFn(`${__dirname}/calculator.js`)
+	const {parseFn} = import 'maineffect'
+	const parsed = parseFn(`${__dirname}/calculator.js`)
 
-describe('sum()', () => {
-	it('should return the sum of two numbers', () => {
-		let { result } = parsed.find('sum').callWith(1, 2)
-		expect(result).to.equal(3)
+	describe('sum()', () => {
+		it('should return the sum of two numbers', () => {
+			let { result } = parsed.find('sum').callWith(1, 2)
+			expect(result).to.equal(3)
+		})
 	})
-})
 
 #### Explanation
 Here, we wanted to test the **sum** function of **Calculator.js**. Generally we import the file into our test and call **sum**. Instead we parsed the raw file, and found the **sum** function and called it with the arguments.
@@ -48,45 +48,45 @@ We simply parse the raw text of the js file to get the [AST](https://en.wikipedi
 
 ##### Casino.js
 
-import log from 'Logger'
-import fetch from './fetcher'
-import randomizer from 'randomizer'
+	import log from 'Logger'
+	import fetch from './fetcher'
+	import randomizer from 'randomizer'
 
-const handler = async (req, res) => {
-	log.info('Inside handler')
-	const dealerName = await fetch('/dealer')
-	let message = `Hello ${req.query.user}. I am ${dealerName}. Your lucky number is ${randomizer()}`
-	return res.send(message)
-}
+	const handler = async (req, res) => {
+		log.info('Inside handler')
+		const dealerName = await fetch('/dealer')
+		let message = `Hello ${req.query.user}. I am ${dealerName}. Your lucky number is ${randomizer()}`
+		return res.send(message)
+	}
 
 export default handler
 
 ##### Casino.test.js
 
-import { expect } from 'chai'
-import { stub } from 'sinon'
-import { parseFn } from '../src/maineffect'
+	import { expect } from 'chai'
+	import { stub } from 'sinon'
+	import { parseFn } from '../src/maineffect'
 
-const parsed = parseFn(`${__dirname}/../src/examples/handler.js`)
+	const parsed = parseFn(`${__dirname}/../src/examples/handler.js`)
 
-describe('handler()', () => {
-	const handler = parsed.find('handler')
-	it('should return undefined', async () => {
-		const sendStub = stub()
-		const result = await handler
-								.destroy('log')
-								.fold('dealerName', 'Joe')
-								.provide('randomizer', () => 1)
-								.callWith({
-									query: {
-										user: 'James'
-									}
-								}, {send: sendStub})
-								.result
-		const expected = `Hello James. I am Joe. Your lucky number is 1`
-		expect(sendStub.calledWithExactly(expected)).to.equal(true)
+	describe('handler()', () => {
+		const handler = parsed.find('handler')
+		it('should return undefined', async () => {
+			const sendStub = stub()
+			const result = await handler
+									.destroy('log')
+									.fold('dealerName', 'Joe')
+									.provide('randomizer', () => 1)
+									.callWith({
+										query: {
+											user: 'James'
+										}
+									}, {send: sendStub})
+									.result
+			const expected = `Hello James. I am Joe. Your lucky number is 1`
+			expect(sendStub.calledWithExactly(expected)).to.equal(true)
+		})
 	})
-})
 
 #### Explanation
 Here, we want to test the **handler** function of **Casino.js**. The function takes **request** and **response** objects as arguments. Logs something, fetches a name asynchronously, gets a random number and assembles a message. Finally, it writes this message to the response.
