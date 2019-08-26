@@ -232,8 +232,12 @@ export const parseStr = (code) => {
     return CodeFragment(code)
 }
 
+export const load = parseFn
+export const parse = parseFn
 
 export default {
     parseFn,
-    parseStr
+    parseStr,
+    load,
+    parse
 }

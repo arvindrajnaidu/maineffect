@@ -1,6 +1,6 @@
-# Main Effect
+# Maineffect
 
-Writing tests by redacting instead of mocking.
+Writing tests by redacting source code, instead of mocking.
 
 In software testing, each test exercises a particular branch of execution. Maineffect helps you isolate this branch for easier testing.
 
@@ -10,13 +10,14 @@ In software testing, each test exercises a particular branch of execution. Maine
 
 ### Quickstart
 
-Let us go over some examples that explain the crux.
+Let us dive right in with some examples.
 
 #### Example #1
 
 **Parse** the file (Do not require or import). **Find** the function you want to test by name and **CallWith** the test arguments.
 
 ##### Calculator.js
+
 	const logger = import('Logger')
 	const sum = (a,b) => a + b
 
@@ -33,11 +34,11 @@ Let us go over some examples that explain the crux.
 	})
 
 #### Explanation
-Here we wanted to test the **sum** function of **Calculator.js**. Generally we import the file into our test and call **sum**. Instead we parsed the raw file, and found the **sum** function and called it with the arguments.
+Here, we wanted to test the **sum** function of **Calculator.js**. Generally we import the file into our test and call **sum**. Instead we parsed the raw file, and found the **sum** function and called it with the arguments.
 
-- We never had to import **Logger**. Awesome!
-- We did not even care if **sum** was exported. What?
-- And we still tested the function. Black Magic
+- We never had to import **Logger**. This let's us test files ignoring it's dependencies. *Awesome!*
+- We did not even care if **sum** was exported. *What?*
+- And we still tested the function. *Black Magic*
 
 #### How it works
 We simply parse the raw text of the js file to get the [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree "AST"). In that we **find** the node with name **sum**. Then we generate code with that node. We test this code that we generated, not the original file.
@@ -45,22 +46,23 @@ We simply parse the raw text of the js file to get the [AST](https://en.wikipedi
 ##### Example #2
 **Provide** a variable with any value. **Fold** stuff you don't care about. **Destroy** function calls that are useless for the test.
 
-		// Casino.js
+##### Casino.js
+
 		import log from 'Logger'
 		import fetch from './fetcher'
 		import randomizer from 'randomizer'
 
 		const handler = async (req, res) => {
 			log.info('Inside handler')
-			const myName = await fetch('/name/me')
-			const luckyNumber = randomizer().get()
-			let message = `Hello ${req.query.user}. I am ${myName}. Your lucky number is ${luckyNumber}`
+			const dealerName = await fetch('/dealer')
+			let message = `Hello ${req.query.user}. I am ${dealerName}. Your lucky number is ${randomizer()}`
 			return res.send(message)
 		}
 
 		export default handler
 
-		// Casino.test.js
+##### Casino.test.js
+
 		import { expect } from 'chai'
 		import { stub } from 'sinon'
 		import { parseFn } from '../src/maineffect'
@@ -74,24 +76,23 @@ We simply parse the raw text of the js file to get the [AST](https://en.wikipedi
 					const sendStub = stub()
 					const result = await handler
 														.destroy('log')
-														.fold('myName', 'Joe')
-														.provide('randomizer', () => ({ get: () => 1}))                              
+														.fold('dealerName', 'Joe')
+														.provide('randomizer', () => 1)
 														.callWith({query: {user: 'James'}}, {send: sendStub})
 														.result
 					const expected = `Hello James. I am Joe. Your lucky number is 1`
 					expect(sendStub.calledWithExactly(expected)).to.equal(true)
-					expect(result).to.equal(undefined)
 				})
 			})
 		})
 
 #### Explanation
-Here we want to test the **handler** function of **Casino.js**. The function takes **request** and **response** objects as arguments. Logs something, fetches a name asynchronously, gets a random number and assembles a message. It writes this message to the response.
+Here, we want to test the **handler** function of **Casino.js**. The function takes **request** and **response** objects as arguments. Logs something, fetches a name asynchronously, gets a random number and assembles a message. It writes this message to the response.
 
-- Instead of stubbing **log.info** to behavior we don't really care. We **destroy** that call. Boom!
-- All we care about is the value of **myName**. We are not here to test fetch. So let us **fold** the right-hand-side of that assignment to a value we like. Wait you could do that?
-- Finally it the function needs a randomizer function. Let us **provide** it to the execution environment. This is cheating.
-- And we still tested the function. Voodoo shit.
+- Instead of stubbing **log.info** to behavior we don't really care. We **destroy** that call. *Boom!*
+- All we care about is the value of **dealerName**. We are not here to test fetch. So let us **fold** the right-hand-side of that assignment to a value we like. *Wait you could do that?*
+- Finally it the function needs a randomizer function. Let us **provide** it to the execution environment. *This is cheating.*
+- And we still tested the function. *Voodoo shit.*
 
 ## Development
 ### Build

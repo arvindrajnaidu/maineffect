@@ -1,9 +1,9 @@
 import { expect } from 'chai'
 import { stub } from 'sinon'
-import { parseFn } from '../src/maineffect'
+import { load } from '../src/maineffect'
 
 describe('casino', () => {
-    const parsed = parseFn(`${__dirname}/../src/examples/casino.js`)
+    const parsed = load(`${__dirname}/../src/examples/casino.js`)
 
     describe('handler()', () => {
         const handler = parsed.find('handler')
@@ -12,7 +12,7 @@ describe('casino', () => {
             const result = await handler
                                     .destroy('log')
                                     .fold('myName', 'Joe')
-                                    .provide('randomizer', () => 1)                              
+                                    .provide('randomizer', () => 1)
                                     .callWith({query: {user: 'James'}}, {send: sendStub})
                                     .result
             const expected = `Hello James. I am Joe. Your lucky number is 1`
@@ -20,4 +20,5 @@ describe('casino', () => {
             expect(result).to.equal(undefined)
         })
     })
+
 })
