@@ -69,7 +69,7 @@ We simply parse the raw text of the js file to get the [AST](https://en.wikipedi
 
 		const parsed = parseFn(`${__dirname}/../src/examples/handler.js`)
 
-		describe.only('Handler Functions', () => {
+		describe('Handler Functions', () => {
 			describe('handler()', () => {
 				const handler = parsed.find('handler')
 				it('should return undefined', async () => {
