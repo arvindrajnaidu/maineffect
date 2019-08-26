@@ -3,7 +3,7 @@ import { parseFn } from '../src/maineffect'
 
 describe('basic', () => {
     const parsed = parseFn(`${__dirname}/../src/examples/basic.js`)
-    
+
     describe('sum()', () => {
         it('should return the sum of two numbers', () => {
             const result = parsed
@@ -40,6 +40,15 @@ describe('basic', () => {
             } catch (e) {
                 expect(e.message).to.equal('foo')
             }
+        })
+    })
+    describe('copyUserObject()', () => {
+        it('should support spread operation correctly', () => {
+            const result = parsed
+                    .find('copyUserObject')
+                    .callWith({name: 'blah', age: 950}, 'amazon')
+                    .result
+            expect(result).to.deep.equal({name: 'amazon', age: 950})
         })
     })
 })
