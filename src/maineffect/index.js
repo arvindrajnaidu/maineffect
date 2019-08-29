@@ -31,6 +31,54 @@ export const getCoverage = (reporter, config) => {
     return created.execute(context)
 }
 
+const getIsolatedFn = (init) => {
+    return {
+        "type": "VariableDeclaration",
+        "declarations": [
+            {
+                "type": "VariableDeclarator",
+                "id": {
+                    "type": "Identifier",
+                    "name": "__evaluated__"
+                },
+                "init": init
+            }
+        ],
+        "kind": "const"
+    }
+}
+
+const evaluateScript = (thisParam = null, sandbox, scriptSrc, ...args) => {
+    sandbox['__maineffect_args__'] = args
+    sandbox['__maineffect_this__'] = thisParam
+    let testCode = `
+            (function () {
+                try {
+                    ${scriptSrc}
+                    const __maineffect_result__ = __evaluated__.apply(__maineffect_this__, __maineffect_args__)
+                    return {
+                        result: __maineffect_result__
+                    }
+                } catch (e) {
+                    return {
+                        exception: e
+                    }
+                }
+            })()
+        `
+        
+    const testResult = vm.runInNewContext(testCode, sandbox)
+    const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
+
+    if (!global.__mainEffect_coverageMap__) {
+        global.__mainEffect_coverageMap__ = coverageMap
+    } else {
+        global.__mainEffect_coverageMap__.merge(coverageMap)
+    }
+
+    return testResult
+}
+
 const CodeFragment = (scriptSrc, sandbox) => {
     const parsedCode = acorn.parse(scriptSrc, {sourceType: 'module'})
     let exception
@@ -41,20 +89,11 @@ const CodeFragment = (scriptSrc, sandbox) => {
                 if (x && 
                     x.type === 'VariableDeclarator' &&
                     x.id && x.id.name === key) {
-                        return {
-                            "type": "VariableDeclaration",
-                            "declarations": [
-                                {
-                                    "type": "VariableDeclarator",
-                                    "id": {
-                                        "type": "Identifier",
-                                        "name": "__evaluated__"
-                                    },
-                                    "init": x.init
-                                }
-                            ],
-                            "kind": "const"
-                        }
+                    return (getIsolatedFn(x.init))
+                } else if (x && 
+                    x.type === 'Property' &&
+                    x.key && x.key.name === key) {
+                        return getIsolatedFn(x.value)
                 }
                 return acc
             }, null)
@@ -134,33 +173,10 @@ const CodeFragment = (scriptSrc, sandbox) => {
             return CodeFragment(fnSrc, sandbox)
         },
         callWith: (...args) => {
-            sandbox['__maineffect_args__'] = args
-            let testCode = `
-                    (function () {
-                        try {
-                            ${scriptSrc}
-                            const __maineffect_result__ = __evaluated__.apply(null, __maineffect_args__)
-                            return {
-                                result: __maineffect_result__
-                            }
-                        } catch (e) {
-                            return {
-                                exception: e
-                            }
-                        }
-                    })()
-                `
-            
-            const testResult = vm.runInNewContext(testCode, sandbox)
-            const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
-
-            if (!global.__mainEffect_coverageMap__) {
-                global.__mainEffect_coverageMap__ = coverageMap
-            } else {
-                global.__mainEffect_coverageMap__.merge(coverageMap)
-            }
-
-            return testResult
+            return evaluateScript(null, sandbox, scriptSrc, ...args)
+        },
+        apply: (thisParam, ...args) => {
+            return evaluateScript(thisParam, sandbox, scriptSrc, ...args)
         }
     }
 }
