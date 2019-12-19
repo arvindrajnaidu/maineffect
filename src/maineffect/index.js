@@ -3,7 +3,7 @@ import traverse from 'traverse'
 const acorn = require('acorn')
 const escodegen = require('escodegen')
 const vm = require('vm')
-let Module = require('module')
+// let Module = require('module')
 
 const istanbul = require('istanbul-lib-instrument')
 const coverage = require('istanbul-lib-coverage')
@@ -230,15 +230,15 @@ export const parseFn = (fileName, options) => {
 
     const finalOptions = options ? {...defaultOptions, ...options} : defaultOptions
     const filename = require.resolve(fileName)
-    const fakeModule = {
-            _compile: source => {
-                // console.log('transformed code')
-                // console.log(source)
-            }
-        }
-    // console.log(Module._extensions)
+    // const fakeModule = {
+    //         _compile: source => {
+    //             // console.log('transformed code')
+    //             // console.log(source)
+    //         }
+    //     }
+    // // console.log(Module._extensions)
 
-    Module._extensions['.js'](fakeModule, filename)
+    // Module._extensions['.js'](fakeModule, filename)
     // const require = createRequ/ire(import.meta.url);
     // const m = module.require(fileName)
     // console.log(m)
