@@ -14,7 +14,7 @@ describe('Side Effects', () => {
         it('should return a word using a service', async () => {
             const result = await parsed
                                     .find('generateFooService')
-                                    .provide('wordService', {generateFoo: () => 'foo'})
+                                    .provide('request', () => 'foo')
                                     .callWith()
                                     .result
             expect(result).to.equal('foo')

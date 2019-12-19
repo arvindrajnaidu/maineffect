@@ -3,7 +3,9 @@ import { stub } from 'sinon'
 import { load } from '../src/maineffect'
 
 describe('casino', () => {
-    const parsed = load(`${__dirname}/../src/examples/casino.js`)
+    const parsed = load(`${__dirname}/../src/examples/casino.js`, {
+        ignoreFnCalls: 'log'
+    })
 
     describe('handler()', () => {
         const handler = parsed.find('handler')
@@ -12,7 +14,7 @@ describe('casino', () => {
             const result = await handler
                                     .destroy('log')
                                     .fold('myName', 'Joe')
-                                    .provide('randomizer', () => 1)
+                                    .provide('Math', {random: () => 1})
                                     .callWith({query: {user: 'James'}}, {send: sendStub})
                                     .result
             const expected = `Hello James. I am Joe. Your lucky number is 1`

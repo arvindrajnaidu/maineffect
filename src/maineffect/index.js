@@ -3,6 +3,7 @@ import traverse from 'traverse'
 const acorn = require('acorn')
 const escodegen = require('escodegen')
 const vm = require('vm')
+let Module = require('module')
 
 const istanbul = require('istanbul-lib-instrument')
 const coverage = require('istanbul-lib-coverage')
@@ -181,14 +182,14 @@ const CodeFragment = (scriptSrc, sandbox) => {
     }
 }
 
-export const removeFunctionCalls = (code, setupFn) => {
+export const removeFunctionCalls = (code, setupFns) => {
     const parsedCode = acorn.parse(code, {sourceType: 'module'})
     const fn = traverse(parsedCode).map(function (x) {
         if (x && 
             x.type === 'CallExpression' &&
             x.callee &&
             x.callee.type === 'Identifier' &&
-            (x.callee.name === 'require' || x.callee.name === setupFn)
+            (x.callee.name === 'require' || setupFns.includes(x.callee.name))
             ) {
                 return {
                     "type": "ObjectExpression",
@@ -220,10 +221,28 @@ export const removeFunctionCalls = (code, setupFn) => {
     return escodegen.generate(fn)
 }
 
-export const parseFn = (fileName, options = { 
-        removeSideEffects: true, 
-        setupFn: 'setup',
-    }) => {
+const defaultOptions = { 
+    removeSideEffects: true, 
+    ignoreFnCalls: 'setup',
+}
+
+export const parseFn = (fileName, options) => {
+
+    const finalOptions = options ? {...defaultOptions, ...options} : defaultOptions
+    const filename = require.resolve(fileName)
+    const fakeModule = {
+            _compile: source => {
+                // console.log('transformed code')
+                // console.log(source)
+            }
+        }
+    // console.log(Module._extensions)
+
+    Module._extensions['.js'](fakeModule, filename)
+    // const require = createRequ/ire(import.meta.url);
+    // const m = module.require(fileName)
+    // console.log(m)
+
     let code
     if (typeof fileName === 'function' ){
         code = fileName.toString()
@@ -232,8 +251,9 @@ export const parseFn = (fileName, options = {
         code = fs.readFileSync(fileName, 'utf8')
     }
     
-    if (options.removeSideEffects) {
-        code = removeFunctionCalls(code, options.setupFn)
+    if (finalOptions.removeSideEffects) {
+        const { ignoreFnCalls } = finalOptions
+        code = removeFunctionCalls(code, Array.isArray(ignoreFnCalls) ? ignoreFnCalls : [ignoreFnCalls])
     }
 
     const sb = vm.createContext({setTimeout, console})
