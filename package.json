@@ -1,6 +1,6 @@
 {
   "name": "maineffect",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Writing tests by redacting instead of mocking.",
   "main": "dist/maineffect.js",
   "scripts": {
