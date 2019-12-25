@@ -4,7 +4,7 @@
   "description": "Writing tests by redacting instead of mocking.",
   "main": "dist/maineffect.js",
   "scripts": {
-    "test": "mocha --timeout 10000 --compilers js:@babel/register",
+    "test": "mocha --compilers js:@babel/register",
     "test-dev": "mocha --timeout 10000 --compilers js:@babel/register --watch",
     "build": "npx webpack --config webpack.config.js"
   },
@@ -29,14 +29,6 @@
     "acorn": "^7.0.0",
     "babel-loader": "^8.0.5",
     "escodegen": "^1.11.1",
-    "istanbul-api": "^2.1.1",
-    "istanbul-lib-coverage": "^3.0.0-alpha.0",
-    "istanbul-lib-hook": "^3.0.0-alpha.0",
-    "istanbul-lib-instrument": "^4.0.0-alpha.0",
-    "istanbul-lib-processinfo": "^2.0.0",
-    "istanbul-lib-report": "^3.0.0-alpha.0",
-    "istanbul-lib-source-maps": "^4.0.0-alpha.0",
-    "istanbul-reports": "^3.0.0-alpha.1",
     "traverse": "^0.6.6"
   },
   "devDependencies": {

@@ -1,16 +1,19 @@
 
-import traverse from 'traverse'
-const acorn = require('acorn')
-const escodegen = require('escodegen')
-const vm = require('vm')
+import vm from 'vm'
+import traverse from  'traverse'
+import { parse } from 'acorn'
+
+import escodegen from 'escodegen'
+// const escodegen = require('escodegen')
+// const vm = require('vm')
 // let Module = require('module')
 
-const istanbul = require('istanbul-lib-instrument')
-const coverage = require('istanbul-lib-coverage')
-import { create } from 'istanbul-reports'
-import libReport from  'istanbul-lib-report'
+// const istanbul = require('istanbul-lib-instrument')
+// const coverage = require('istanbul-lib-coverage')
+// import { create } from 'istanbul-reports'
+// import libReport from  'istanbul-lib-report'
 
-const instrumenter = istanbul.createInstrumenter({esModules: true, compact: false})
+// const instrumenter = istanbul.createInstrumenter({esModules: true, compact: false})
 
 const getReplacementKey = key => `__maineffect_${key}_replacement__`
 
@@ -24,13 +27,13 @@ const getFirstIdentifier = (node) => {
     return firstIdentifier
 }
 
-export const getCoverage = (reporter, config) => {
-    const context = libReport.createContext({
-        coverageMap: global.__mainEffect_coverageMap__
-    })    
-    const created = create(reporter, config)
-    return created.execute(context)
-}
+// export const getCoverage = (reporter, config) => {
+//     const context = libReport.createContext({
+//         coverageMap: global.__mainEffect_coverageMap__
+//     })    
+//     const created = create(reporter, config)
+//     return created.execute(context)
+// }
 
 const getIsolatedFn = (init) => {
     return {
@@ -69,19 +72,19 @@ const evaluateScript = (thisParam = null, sandbox, scriptSrc, ...args) => {
         `
         
     const testResult = vm.runInNewContext(testCode, sandbox)
-    const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
+    // const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
 
-    if (!global.__mainEffect_coverageMap__) {
-        global.__mainEffect_coverageMap__ = coverageMap
-    } else {
-        global.__mainEffect_coverageMap__.merge(coverageMap)
-    }
+    // if (!global.__mainEffect_coverageMap__) {
+    //     global.__mainEffect_coverageMap__ = coverageMap
+    // } else {
+    //     global.__mainEffect_coverageMap__.merge(coverageMap)
+    // }
 
     return testResult
 }
 
 const CodeFragment = (scriptSrc, sandbox) => {
-    const parsedCode = acorn.parse(scriptSrc, {sourceType: 'module'})
+    const parsedCode = parse(scriptSrc, {sourceType: 'module'})
     let exception
 
     return {
@@ -104,58 +107,50 @@ const CodeFragment = (scriptSrc, sandbox) => {
             const fnSrc = escodegen.generate(fn)
             return CodeFragment(fnSrc, sandbox)
         },
-
         provide: function (key, stub) {
             sandbox[key] = stub
             return this
         },
-
         source: () => {
             return scriptSrc
         },
-
+        print: function (logger = console.log) {
+            logger(scriptSrc)
+            return this
+        },
         fold: (key, replacement) => {
             sandbox[getReplacementKey(key)] = replacement
-
             const fn = traverse(parsedCode).map(function (x) {
-                if (x && 
-                    x.type === 'VariableDeclarator' &&
-                    x.id && x.id.name === key) {
-                    
-                    // Check for coverage variables
-                    if (x.init && 
-                        x.init.type === 'SequenceExpression' &&
-                        x.init.expressions &&
-                        x.init.expressions[0] &&
-                        x.init.expressions[0].type === 'UpdateExpression' &&
-                        x.init.expressions[0].operator === '++' &&
-                        x.init.expressions[0].argument.object &&
-                        x.init.expressions[0].argument.object.object &&
-                        x.init.expressions[0].argument.object.object.name &&
-                        x.init.expressions[0].argument.object.object.name.indexOf('cov_') === 0 &&
-                        x.init.expressions[0].argument.object.property.name === 's'
-                        ) {
-                        return this.update({...x, init: {
-                            "type": "SequenceExpression",
-                            "expressions": [
-                                x.init.expressions[0],
-                                {
+                if (x && x.type === 'VariableDeclarator') {
+                    if (x.id && x.id.name === key) {
+                        this.update({...x, init: {
+                                "type": "Identifier",
+                                "name": getReplacementKey(key)
+                            }
+                        })
+                    } else if (x.id && x.id.type === 'ObjectPattern') {
+                        const matchedKeys = x.id.properties && x.id.properties.filter(p => p.key && p.key.name === key)
+                        if (matchedKeys.length > 0) {
+                            this.update({...x, init: {
                                     "type": "Identifier",
                                     "name": getReplacementKey(key)
-                                }  
-                            ]}
-                        })
-                    }
-
-                    this.update({...x, init: {
-                            "type": "Identifier",
-                            "name": getReplacementKey(key)
+                                }
+                            })
                         }
-                    })
+                    }
                 }
             })
             const fnSrc = escodegen.generate(fn)
             return CodeFragment(fnSrc, sandbox)
+        },
+        foldWithObject: function (folder) {
+            if (Object.keys(folder).length === 0) {
+                return this
+            }
+            return Object.keys(folder).reduce((prev, curr) => {
+               prev = prev.fold(curr, folder[curr])
+               return prev
+            }, this)
         },
         destroy: (key) => {     
             const fn = traverse(parsedCode).map(function (x) {
@@ -183,7 +178,7 @@ const CodeFragment = (scriptSrc, sandbox) => {
 }
 
 export const removeFunctionCalls = (code, setupFns) => {
-    const parsedCode = acorn.parse(code, {sourceType: 'module'})
+    const parsedCode = parse(code, {sourceType: 'module'})
     const fn = traverse(parsedCode).map(function (x) {
         if (x && 
             x.type === 'CallExpression' &&
@@ -227,9 +222,8 @@ const defaultOptions = {
 }
 
 export const parseFn = (fileName, options) => {
-
     const finalOptions = options ? {...defaultOptions, ...options} : defaultOptions
-    const filename = require.resolve(fileName)
+    // const filename = require.resolve(fileName)
     // const fakeModule = {
     //         _compile: source => {
     //             // console.log('transformed code')
@@ -259,9 +253,9 @@ export const parseFn = (fileName, options) => {
     const sb = vm.createContext({setTimeout, console})
 
     // Coverage
-    const instrumentedCode = instrumenter.instrumentSync(code, fileName)
-    vm.runInContext(instrumentedCode, sb)    
-    return CodeFragment(instrumentedCode, sb)   
+    // const instrumentedCode = instrumenter.instrumentSync(code, fileName)
+    // vm.runInContext(instrumentedCode, sb)    
+    return CodeFragment(code, sb)   
 }
 
 export const parseStr = (code) => {
@@ -269,11 +263,10 @@ export const parseStr = (code) => {
 }
 
 export const load = parseFn
-export const parse = parseFn
 
 export default {
     parseFn,
     parseStr,
     load,
-    parse
+    parse: parseFn
 }
