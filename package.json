@@ -4,7 +4,7 @@
   "description": "Writing tests by redacting instead of mocking.",
   "main": "dist/maineffect.js",
   "scripts": {
-    "test": "mocha test/counter.test.js --require @babel/register",
+    "test": "mocha test/**/*.test.js --require @babel/register",
     "test-dev": "mocha --timeout 10000  --require @babel/register --watch",
     "build": "npx webpack --config webpack.config.js"
   },
@@ -25,6 +25,7 @@
   "dependencies": {
     "@babel/core": "^7.4.0",
     "@babel/preset-env": "^7.4.2",
+    "@babel/preset-react": "^7.8.3",
     "@babel/register": "^7.4.0",
     "acorn": "^7.0.0",
     "acorn-jsx": "^5.1.0",
@@ -38,6 +39,9 @@
     "mocha": "^7.0.1",
     "nodemon": "1.12.0",
     "nyc": "^13.3.0",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-test-renderer": "^16.12.0",
     "sinon": "^7.4.1",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.0"

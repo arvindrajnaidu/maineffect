@@ -1,33 +1,7 @@
 
 import vm from 'vm'
 import traverse from  'traverse'
-
-import {Parser} from 'acorn'
-import jsx from 'acorn-jsx'
-
-import { transform } from "@babel/core";
 import * as babel from "@babel/core";
-
-// JSXParser.parse("foo(<bar/>)");
-
-
-import escodegen from 'escodegen'
-// const escodegen = require('escodegen')
-// const vm = require('vm')
-// let Module = require('module')
-
-// const istanbul = require('istanbul-lib-instrument')
-// const coverage = require('istanbul-lib-coverage')
-// import { create } from 'istanbul-reports'
-// import libReport from  'istanbul-lib-report'
-
-// const instrumenter = istanbul.createInstrumenter({esModules: true, compact: false})
-
-const ExtendedParser = Parser.extend(jsx())
-
-// parse
-
-// parse("my(<jsx/>, 'code');")
 
 const getReplacementKey = key => `__maineffect_${key}_replacement__`
 
@@ -50,6 +24,7 @@ const getFirstIdentifier = (node) => {
 // }
 
 const getIsolatedFn = (init) => {
+    // console.log(JSON.stringify(init), '<<<')
     return {
         "type": "VariableDeclaration",
         "declarations": [
@@ -69,10 +44,12 @@ const getIsolatedFn = (init) => {
 const evaluateScript = (thisParam = null, sandbox, scriptSrc, ...args) => {
     sandbox['__maineffect_args__'] = args
     sandbox['__maineffect_this__'] = thisParam
+
+    // console.log(scriptSrc.code, '<<<')
     let testCode = `
             (function () {
                 try {
-                    ${scriptSrc}
+                    ${scriptSrc.code}
                     const __maineffect_result__ = __evaluated__.apply(__maineffect_this__, __maineffect_args__)
                     return {
                         result: __maineffect_result__
@@ -84,7 +61,7 @@ const evaluateScript = (thisParam = null, sandbox, scriptSrc, ...args) => {
                 }
             })()
         `
-        
+    // console.log(testCode)
     const testResult = vm.runInNewContext(testCode, sandbox)
     // const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
 
@@ -99,12 +76,19 @@ const evaluateScript = (thisParam = null, sandbox, scriptSrc, ...args) => {
 
 const CodeFragment = (scriptSrc, sandbox) => {
     // console.log(scriptSrc, '<<<<<<')
-    const parsedCode = ExtendedParser.parse(scriptSrc, {sourceType: 'module'})
+    let parsedCode
+    if (typeof scriptSrc === 'string') {
+        parsedCode = babel.parseSync(scriptSrc, {sourceType: 'module', ast: true, code: false})
+    } else {
+        parsedCode = scriptSrc
+    }
+    // console.log(JSON.stringify(parsedCode))
     let exception
 
-    // console.log(parsedCode)
+    // console.log(JSON.stringify(parsedCode))
     return {
         find: (key) => {
+            // console.log(JSON.stringify(parsedCode))
             const fn = traverse(parsedCode).reduce(function (acc, x) {
                 if (x && 
                     x.type === 'VariableDeclarator' &&
@@ -115,26 +99,41 @@ const CodeFragment = (scriptSrc, sandbox) => {
                     x.key && x.key.name === key) {
                         return getIsolatedFn(x.value)
                 } else if (x && 
+                    x.type === 'ObjectProperty' &&
+                    x.key && x.key.name === key) {
+                        return getIsolatedFn(x.value)
+                } else if (x && 
                     x.type === 'MethodDefinition' &&
                     x.key && x.key.name === key) {
                         return getIsolatedFn(x.value)
+                } else if (x && 
+                    x.type === 'ClassMethod' &&
+                    x.key && x.key.name === key) {
+                        return getIsolatedFn({...x, type: 'FunctionExpression'})
+                } else if (x && 
+                    x.type === 'ClassDeclaration' &&
+                    x.id && x.id.type === 'Identifier' &&
+                    x.id.name === key) {
+                        return x
                 }
                 return acc
             }, null)
             if (!fn) {
                 throw new Error('Function not found')
             }
-            console.log(JSON.stringify(fn), '<<<<')
-            const {code, map, ast} = babel.transformFromAstSync(fn)
-            console.log(code)
-            const fnSrc = escodegen.generate(fn)
-            return CodeFragment(fnSrc, sandbox)
+            // console.log(JSON.stringify(fn), '<<<')
+            var ast = babel.types.file(babel.types.program([fn]));
+            return CodeFragment(ast, sandbox)
         },
         provide: function (key, stub) {
             sandbox[key] = stub
             return this
         },
         source: () => {
+            if (typeof scriptSrc !== 'string') {
+                // console.log
+                return babel.transformFromAstSync(scriptSrc).code
+            }
             return scriptSrc
         },
         print: function (logger = console.log) {
@@ -163,8 +162,8 @@ const CodeFragment = (scriptSrc, sandbox) => {
                     }
                 }
             })
-            const fnSrc = escodegen.generate(fn)
-            return CodeFragment(fnSrc, sandbox)
+            // const fnSrc = escodegen.generate(fn)
+            return CodeFragment(fn, sandbox)
         },
         foldWithObject: function (folder) {
             if (Object.keys(folder).length === 0) {
@@ -188,56 +187,69 @@ const CodeFragment = (scriptSrc, sandbox) => {
                     }
                 } 
             })
-            const fnSrc = escodegen.generate(fn)
-            return CodeFragment(fnSrc, sandbox)
+            // const fnSrc = escodegen.generate(fn)
+            return CodeFragment(fn, sandbox)
         },
         callWith: (...args) => {
-            return evaluateScript(null, sandbox, scriptSrc, ...args)
+            let code
+            if (typeof scriptSrc !== 'string') {
+                code = babel.transformFromAstSync(scriptSrc)
+            } else {
+                code = scriptSrc
+            }
+            return evaluateScript(null, sandbox, code, ...args)
         },
         apply: (thisParam, ...args) => {
-            return evaluateScript(thisParam, sandbox, scriptSrc, ...args)
+            let code
+            if (typeof scriptSrc !== 'string') {
+                code = babel.transformFromAstSync(scriptSrc)
+            } else {
+                code = scriptSrc
+            }
+            // console.log(sandbox, code.code, '<<<')
+            return evaluateScript(thisParam, sandbox, code, ...args)
         }
     }
 }
 
-export const removeFunctionCalls = (code, setupFns) => {
-    const parsedCode = ExtendedParser.parse(code, {sourceType: 'module'})
-    const fn = traverse(parsedCode).map(function (x) {
-        if (x && 
-            x.type === 'CallExpression' &&
-            x.callee &&
-            x.callee.type === 'Identifier' &&
-            (x.callee.name === 'require' || setupFns.includes(x.callee.name))
-            ) {
-                return {
-                    "type": "ObjectExpression",
-                    "properties": []
-                }
-        }
-        if (x &&
-            x.type === 'ImportDeclaration') {
-                return {
-                    "type": "ObjectExpression",
-                    "properties": []
-                }
-        }
-        if (x &&
-            x.type === 'ExportDefaultDeclaration') {
-                return {
-                    "type": "ObjectExpression",
-                    "properties": []
-                }
-        }
-        if (x &&
-            x.type === 'ExportNamedDeclaration') {
-            return x.declaration
-        }
+// export const removeFunctionCalls = (code, setupFns) => {
+//     const parsedCode = ExtendedParser.parse(code, {sourceType: 'module'})
+//     const fn = traverse(parsedCode).map(function (x) {
+//         if (x && 
+//             x.type === 'CallExpression' &&
+//             x.callee &&
+//             x.callee.type === 'Identifier' &&
+//             (x.callee.name === 'require' || setupFns.includes(x.callee.name))
+//             ) {
+//                 return {
+//                     "type": "ObjectExpression",
+//                     "properties": []
+//                 }
+//         }
+//         if (x &&
+//             x.type === 'ImportDeclaration') {
+//                 return {
+//                     "type": "ObjectExpression",
+//                     "properties": []
+//                 }
+//         }
+//         if (x &&
+//             x.type === 'ExportDefaultDeclaration') {
+//                 return {
+//                     "type": "ObjectExpression",
+//                     "properties": []
+//                 }
+//         }
+//         if (x &&
+//             x.type === 'ExportNamedDeclaration') {
+//             return x.declaration
+//         }
 
-        return x
-    }, null)
+//         return x
+//     }, null)
     
-    return escodegen.generate(fn)
-}
+//     return escodegen.generate(fn)
+// }
 
 const defaultOptions = { 
     removeSideEffects: true, 
