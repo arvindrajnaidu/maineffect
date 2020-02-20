@@ -1,7 +1,15 @@
 
 import vm from 'vm'
 import traverse from  'traverse'
-import { parse } from 'acorn'
+
+import {Parser} from 'acorn'
+import jsx from 'acorn-jsx'
+
+import { transform } from "@babel/core";
+import * as babel from "@babel/core";
+
+// JSXParser.parse("foo(<bar/>)");
+
 
 import escodegen from 'escodegen'
 // const escodegen = require('escodegen')
@@ -14,6 +22,12 @@ import escodegen from 'escodegen'
 // import libReport from  'istanbul-lib-report'
 
 // const instrumenter = istanbul.createInstrumenter({esModules: true, compact: false})
+
+const ExtendedParser = Parser.extend(jsx())
+
+// parse
+
+// parse("my(<jsx/>, 'code');")
 
 const getReplacementKey = key => `__maineffect_${key}_replacement__`
 
@@ -84,9 +98,11 @@ const evaluateScript = (thisParam = null, sandbox, scriptSrc, ...args) => {
 }
 
 const CodeFragment = (scriptSrc, sandbox) => {
-    const parsedCode = parse(scriptSrc, {sourceType: 'module'})
+    // console.log(scriptSrc, '<<<<<<')
+    const parsedCode = ExtendedParser.parse(scriptSrc, {sourceType: 'module'})
     let exception
 
+    // console.log(parsedCode)
     return {
         find: (key) => {
             const fn = traverse(parsedCode).reduce(function (acc, x) {
@@ -98,12 +114,19 @@ const CodeFragment = (scriptSrc, sandbox) => {
                     x.type === 'Property' &&
                     x.key && x.key.name === key) {
                         return getIsolatedFn(x.value)
+                } else if (x && 
+                    x.type === 'MethodDefinition' &&
+                    x.key && x.key.name === key) {
+                        return getIsolatedFn(x.value)
                 }
                 return acc
             }, null)
             if (!fn) {
                 throw new Error('Function not found')
             }
+            console.log(JSON.stringify(fn), '<<<<')
+            const {code, map, ast} = babel.transformFromAstSync(fn)
+            console.log(code)
             const fnSrc = escodegen.generate(fn)
             return CodeFragment(fnSrc, sandbox)
         },
@@ -178,7 +201,7 @@ const CodeFragment = (scriptSrc, sandbox) => {
 }
 
 export const removeFunctionCalls = (code, setupFns) => {
-    const parsedCode = parse(code, {sourceType: 'module'})
+    const parsedCode = ExtendedParser.parse(code, {sourceType: 'module'})
     const fn = traverse(parsedCode).map(function (x) {
         if (x && 
             x.type === 'CallExpression' &&
@@ -235,20 +258,24 @@ export const parseFn = (fileName, options) => {
     // Module._extensions['.js'](fakeModule, filename)
     // const require = createRequ/ire(import.meta.url);
     // const m = module.require(fileName)
-    // console.log(m)
+    // console.log('Resolving ', fileName, module.parent.paths)
+    
+    
 
     let code
     if (typeof fileName === 'function' ){
         code = fileName.toString()
     } else {
+        const fnAbsName = require.resolve(fileName, {paths: module.parent.paths})
         const fs = require('fs')
-        code = fs.readFileSync(fileName, 'utf8')
+        code = fs.readFileSync(fnAbsName, 'utf8')
+        // console.log(fnAbsName)
     }
     
-    if (finalOptions.removeSideEffects) {
-        const { ignoreFnCalls } = finalOptions
-        code = removeFunctionCalls(code, Array.isArray(ignoreFnCalls) ? ignoreFnCalls : [ignoreFnCalls])
-    }
+    // if (finalOptions.removeSideEffects) {
+    //     const { ignoreFnCalls } = finalOptions
+    //     code = removeFunctionCalls(code, Array.isArray(ignoreFnCalls) ? ignoreFnCalls : [ignoreFnCalls])
+    // }
 
     const sb = vm.createContext({setTimeout, console})
 
