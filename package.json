@@ -4,7 +4,7 @@
   "description": "Writing tests by redacting instead of mocking.",
   "main": "dist/maineffect.js",
   "scripts": {
-    "test": "nyc mocha test/**/Greeting.test.js --require @babel/register",
+    "test": "nyc mocha test/**/*.test.js --require @babel/register",
     "test-dev": "mocha --timeout 10000  --require @babel/register --watch",
     "build": "npx webpack --config webpack.config.js"
   },
