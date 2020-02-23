@@ -9,7 +9,6 @@ const Sandbox = (fileName, state) => {
     global.__maineffect_sb__ = global.__maineffect_sb__ ? global.__maineffect_sb__ : {}
     global.__maineffect_sb__[namespace] = global.__maineffect_sb__[namespace] ? global.__maineffect_sb__[namespace] : state
 
-    // console.log(namespace)
     const fileSB = global.__maineffect_sb__[namespace]
     return {
         get: (key) => fileSB[key],
@@ -58,31 +57,11 @@ const callRemover = (options) => () => {
             }
         },
         ImportDeclaration(path, state) {
-            // if (options.imports)
-            // const keys = Object.keys(options.imports)
-            // if (keys.includes(path.node.source.value)) {
-            //     const val = options.imports[path.node.source.value]
-            //     Sandbox.set(path.node.source.value, val)
-            //     path.replaceWithSourceString(`__maineffect_sb__.${val} = 1`)
-            // } else {
-                path.remove()
-            // }
-            
-            // path.replaceWith(
-            //     t.binaryExpression("**", path.node.left, t.numberLiteral(2))
-            // )
+            path.remove()
         }
       }
     };
 }
-
-// export const getCoverage = (reporter, config) => {
-//     const context = libReport.createContext({
-//         coverageMap: global.__mainEffect_coverageMap__
-//     })    
-//     const created = create(reporter, config)
-//     return created.execute(context)
-// }
 
 const getIsolatedFn = (init) => {
     return {
@@ -255,10 +234,8 @@ export const parseFn = (fileName, options = {sandbox: {}, destroy: []}) => {
         plugins: [callRemover(options), ] 
     })
 
-    // console.log(code)
     // Let us grab the cov_ function
     const { name } = getCoverageFnName(ast)
-    // console.log('>>>>> ', name)
 
     let testCode = `(function(exports, require, module, __filename, __dirname) {
         ${sb.getCode()}
@@ -270,7 +247,6 @@ export const parseFn = (fileName, options = {sandbox: {}, destroy: []}) => {
     sb.set(`${name}`, covFn)
     sb.set('covFnName', name)
 
-    // console.log('>>>>> ', Sandbox.getCode())
     return CodeFragment(ast, sb)
 }
 

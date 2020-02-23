@@ -1,15 +1,15 @@
 import { expect } from 'chai'
 import { stub } from 'sinon'
-import { load } from '../src/maineffect'
+import { parse } from '../src/maineffect'
+
+const parsed = parse(`${__dirname}/../src/examples/casino.js`, {
+    destroy: ['log'],
+    sandbox: {
+        request: () => 'Joe'
+    }
+})
 
 describe('casino', () => {
-    const parsed = load(`${__dirname}/../src/examples/casino.js`, {
-        destroy: ['log'],
-        sandbox: {
-            request: () => 'Joe'
-        }
-    })
-
     describe('handler()', () => {
         const handler = parsed.find('handler')
         it('should return undefined', async () => {
@@ -22,11 +22,8 @@ describe('casino', () => {
                                     .callWith({query: {user: 'James'}}, {send: sendStub})
                                     .result
             const expected = `Hello James. I am Joe. Your lucky number is 1`
-            console.log(result)
-            // console.log(sendStub.getCalls())
             expect(sendStub.calledWithExactly(expected)).to.equal(true)
             expect(result).to.equal(undefined)
         })
     })
-
 })
