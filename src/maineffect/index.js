@@ -71,7 +71,7 @@ const getIsolatedFn = (init) => {
                 "type": "VariableDeclarator",
                 "id": {
                     "type": "Identifier",
-                    "name": "__evaluated__"
+                    "name": "__maineffect_evaluated__"
                 },
                 "init": init
             }
@@ -94,7 +94,7 @@ const evaluateScript = (thisParam = null, ast, sb, ...args) => {
                 ${closures}
                 try {
                     ${code}
-                    const __maineffect_result__ = __evaluated__.apply(__maineffect_this__, __maineffect_args__)
+                    const __maineffect_result__ = __maineffect_evaluated__.apply(__maineffect_this__, __maineffect_args__)
                     return {
                         result: __maineffect_result__
                     }
@@ -107,14 +107,12 @@ const evaluateScript = (thisParam = null, ast, sb, ...args) => {
         `
     
     const testResult = vm.runInThisContext(testCode)
-    // console.log(testResult)
     return testResult
 }
 
 const CodeFragment = (ast, sb) => {
     return {
         find: (key) => {
-            // console.log(JSON.stringify(ast))
             const fn = traverse(ast).reduce(function (acc, x) {
                 if (x &&
                     x.type === 'VariableDeclarator' &&
