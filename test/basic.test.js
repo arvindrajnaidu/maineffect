@@ -8,8 +8,10 @@ describe('basic', () => {
         it('should return the sum of two numbers', () => {
             const result = parsed
                             .find('sum')
+                            // .source()
                             .callWith(51, 82)
                             .result
+            // console.log(result)
             expect(result).to.equal(133)
         })
     })

@@ -1,18 +1,69 @@
 
 import vm from 'vm'
-import traverse from  'traverse'
+import traverse from 'traverse'
 import * as babel from "@babel/core";
+
+const Sandbox = {
+    get: (key) => global.__maineffect_sb__[key],
+    set: (key, val) => global.__maineffect_sb__[key] = val,
+    reset: (val) => global.__maineffect_sb__ = val,
+    getCode: () => {
+        return Object.keys(__maineffect_sb__).reduce((acc, curr) => {
+            return `
+                ${acc}
+                const ${curr} = __maineffect_sb__.${curr}
+            `
+        }, '')
+    }
+}
 
 const getReplacementKey = key => `__maineffect_${key}_replacement__`
 
 const getFirstIdentifier = (node) => {
     let firstIdentifier = null
     traverse(node).forEach((x) => {
-        if (!firstIdentifier && x.type === 'Identifier') {
+        if (!firstIdentifier && x && x.type === 'Identifier') {
             firstIdentifier = x
         }
     })
     return firstIdentifier
+}
+
+const getCoverageFnName = (node) => {
+    let firstIdentifier = null
+    traverse(node).forEach((x) => {
+        if (!firstIdentifier && x && x.type === 'Identifier' && x.name && x.name.indexOf('cov_') === 0) {
+            firstIdentifier = x
+        }
+    })
+    return firstIdentifier
+}
+
+const callRemover = (options) => () => {
+    return {
+      visitor: {
+        CallExpression(path, state) {
+            if (options.destroy.includes(path.node.callee.name)) {
+                path.remove()
+            }
+        },
+        ImportDeclaration(path, state) {
+            // if (options.imports)
+            // const keys = Object.keys(options.imports)
+            // if (keys.includes(path.node.source.value)) {
+            //     const val = options.imports[path.node.source.value]
+            //     Sandbox.set(path.node.source.value, val)
+            //     path.replaceWithSourceString(`__maineffect_sb__.${val} = 1`)
+            // } else {
+                path.remove()
+            // }
+            
+            // path.replaceWith(
+            //     t.binaryExpression("**", path.node.left, t.numberLiteral(2))
+            // )
+        }
+      }
+    };
 }
 
 // export const getCoverage = (reporter, config) => {
@@ -24,7 +75,6 @@ const getFirstIdentifier = (node) => {
 // }
 
 const getIsolatedFn = (init) => {
-    // console.log(JSON.stringify(init), '<<<')
     return {
         "type": "VariableDeclaration",
         "declarations": [
@@ -41,16 +91,21 @@ const getIsolatedFn = (init) => {
     }
 }
 
-const evaluateScript = (thisParam = null, sandbox, scriptSrc, ...args) => {
-    sandbox['__maineffect_args__'] = args
-    sandbox['__maineffect_this__'] = thisParam
+const evaluateScript = (thisParam = null, ast, ...args) => {
+    const { code } = babel.transformFromAstSync(ast, null, {
+        filename: 'fake'
+    })    
 
-    // console.log(scriptSrc.code, '<<<')
+    Sandbox.set('__maineffect_args__', args)
+    Sandbox.set('__maineffect_this__', thisParam)
+    const closures = Sandbox.getCode()
+    console.log('>>>>', closures)
     let testCode = `
             (function () {
+                ${closures}
                 try {
-                    ${scriptSrc.code}
-                    const __maineffect_result__ = __evaluated__.apply(__maineffect_this__, __maineffect_args__)
+                    ${code}
+                    const __maineffect_result__ = __evaluated__.apply(__maineffect_sb__.__maineffect_this__, __maineffect_sb__.__maineffect_args__)
                     return {
                         result: __maineffect_result__
                     }
@@ -61,99 +116,78 @@ const evaluateScript = (thisParam = null, sandbox, scriptSrc, ...args) => {
                 }
             })()
         `
-    // console.log(testCode)
-    const testResult = vm.runInNewContext(testCode, sandbox)
-    // const coverageMap = coverage.createCoverageMap(sandbox.__coverage__)
-
-    // if (!global.__mainEffect_coverageMap__) {
-    //     global.__mainEffect_coverageMap__ = coverageMap
-    // } else {
-    //     global.__mainEffect_coverageMap__.merge(coverageMap)
-    // }
-
+    const testResult = vm.runInThisContext(testCode)
     return testResult
 }
 
-const CodeFragment = (scriptSrc, sandbox) => {
-    // console.log(scriptSrc, '<<<<<<')
-    let parsedCode
-    if (typeof scriptSrc === 'string') {
-        parsedCode = babel.parseSync(scriptSrc, {sourceType: 'module', ast: true, code: false})
-    } else {
-        parsedCode = scriptSrc
-    }
-    // console.log(JSON.stringify(parsedCode))
-    let exception
-
-    // console.log(JSON.stringify(parsedCode))
+const CodeFragment = (ast) => {
     return {
         find: (key) => {
-            // console.log(JSON.stringify(parsedCode))
-            const fn = traverse(parsedCode).reduce(function (acc, x) {
-                if (x && 
+            // console.log(JSON.stringify(ast))
+            const fn = traverse(ast).reduce(function (acc, x) {
+                if (x &&
                     x.type === 'VariableDeclarator' &&
                     x.id && x.id.name === key) {
                     return (getIsolatedFn(x.init))
-                } else if (x && 
+                } else if (x &&
                     x.type === 'Property' &&
                     x.key && x.key.name === key) {
-                        return getIsolatedFn(x.value)
-                } else if (x && 
+                    return getIsolatedFn(x.value)
+                } else if (x &&
                     x.type === 'ObjectProperty' &&
                     x.key && x.key.name === key) {
-                        return getIsolatedFn(x.value)
-                } else if (x && 
+                    return getIsolatedFn(x.value)
+                } else if (x &&
                     x.type === 'MethodDefinition' &&
                     x.key && x.key.name === key) {
-                        return getIsolatedFn(x.value)
-                } else if (x && 
+                    return getIsolatedFn(x.value)
+                } else if (x &&
                     x.type === 'ClassMethod' &&
                     x.key && x.key.name === key) {
-                        return getIsolatedFn({...x, type: 'FunctionExpression'})
-                } else if (x && 
+                    return getIsolatedFn({ ...x, type: 'FunctionExpression' })
+                } else if (x &&
                     x.type === 'ClassDeclaration' &&
                     x.id && x.id.type === 'Identifier' &&
                     x.id.name === key) {
-                        return x
+                    return x
                 }
                 return acc
             }, null)
             if (!fn) {
                 throw new Error('Function not found')
             }
-            // console.log(JSON.stringify(fn), '<<<')
-            var ast = babel.types.file(babel.types.program([fn]));
-            return CodeFragment(ast, sandbox)
+            var newAst = babel.types.program([fn])
+            return CodeFragment(newAst)
         },
         provide: function (key, stub) {
-            sandbox[key] = stub
+            Sandbox.set(key, stub)
             return this
         },
         source: () => {
-            if (typeof scriptSrc !== 'string') {
-                // console.log
-                return babel.transformFromAstSync(scriptSrc).code
-            }
-            return scriptSrc
+            return babel.transformFromAstSync(ast, null, {
+                filename: 'fake'
+            }).code
         },
         print: function (logger = console.log) {
             logger(scriptSrc)
             return this
         },
         fold: (key, replacement) => {
-            sandbox[getReplacementKey(key)] = replacement
-            const fn = traverse(parsedCode).map(function (x) {
+            Sandbox.set(getReplacementKey(key), replacement)
+            const fn = traverse(ast).map(function (x) {
                 if (x && x.type === 'VariableDeclarator') {
                     if (x.id && x.id.name === key) {
-                        this.update({...x, init: {
+                        this.update({
+                            ...x, init: {
                                 "type": "Identifier",
-                                "name": getReplacementKey(key)
+                                "name": `__maineffect_sb__.${getReplacementKey(key)}`
                             }
                         })
                     } else if (x.id && x.id.type === 'ObjectPattern') {
                         const matchedKeys = x.id.properties && x.id.properties.filter(p => p.key && p.key.name === key)
                         if (matchedKeys.length > 0) {
-                            this.update({...x, init: {
+                            this.update({
+                                ...x, init: {
                                     "type": "Identifier",
                                     "name": getReplacementKey(key)
                                 }
@@ -162,20 +196,19 @@ const CodeFragment = (scriptSrc, sandbox) => {
                     }
                 }
             })
-            // const fnSrc = escodegen.generate(fn)
-            return CodeFragment(fn, sandbox)
+            return CodeFragment(fn)
         },
         foldWithObject: function (folder) {
             if (Object.keys(folder).length === 0) {
                 return this
             }
             return Object.keys(folder).reduce((prev, curr) => {
-               prev = prev.fold(curr, folder[curr])
-               return prev
+                prev = prev.fold(curr, folder[curr])
+                return prev
             }, this)
         },
-        destroy: (key) => {     
-            const fn = traverse(parsedCode).map(function (x) {
+        destroy: (key) => {
+            const fn = traverse(ast).map(function (x) {
                 if (x && (x.type === 'CallExpression') && x.callee) {
                     // Under this callee if the first identifier matches key ... destroy
                     const firstIdentifierNode = getFirstIdentifier(x.callee)
@@ -185,127 +218,60 @@ const CodeFragment = (scriptSrc, sandbox) => {
                             "body": []
                         })
                     }
-                } 
+                }
             })
-            // const fnSrc = escodegen.generate(fn)
-            return CodeFragment(fn, sandbox)
+            return CodeFragment(fn)
         },
         callWith: (...args) => {
-            let code
-            if (typeof scriptSrc !== 'string') {
-                code = babel.transformFromAstSync(scriptSrc)
-            } else {
-                code = scriptSrc
-            }
-            return evaluateScript(null, sandbox, code, ...args)
+            return evaluateScript(null, ast, ...args)
         },
         apply: (thisParam, ...args) => {
-            let code
-            if (typeof scriptSrc !== 'string') {
-                code = babel.transformFromAstSync(scriptSrc)
-            } else {
-                code = scriptSrc
-            }
-            // console.log(sandbox, code.code, '<<<')
-            return evaluateScript(thisParam, sandbox, code, ...args)
+            return evaluateScript(thisParam, ast, ...args)
         }
     }
 }
 
-// export const removeFunctionCalls = (code, setupFns) => {
-//     const parsedCode = ExtendedParser.parse(code, {sourceType: 'module'})
-//     const fn = traverse(parsedCode).map(function (x) {
-//         if (x && 
-//             x.type === 'CallExpression' &&
-//             x.callee &&
-//             x.callee.type === 'Identifier' &&
-//             (x.callee.name === 'require' || setupFns.includes(x.callee.name))
-//             ) {
-//                 return {
-//                     "type": "ObjectExpression",
-//                     "properties": []
-//                 }
-//         }
-//         if (x &&
-//             x.type === 'ImportDeclaration') {
-//                 return {
-//                     "type": "ObjectExpression",
-//                     "properties": []
-//                 }
-//         }
-//         if (x &&
-//             x.type === 'ExportDefaultDeclaration') {
-//                 return {
-//                     "type": "ObjectExpression",
-//                     "properties": []
-//                 }
-//         }
-//         if (x &&
-//             x.type === 'ExportNamedDeclaration') {
-//             return x.declaration
-//         }
+export const parseFn = (fileName, options = {sandbox: {}, destroy: []}) => {
 
-//         return x
-//     }, null)
+    // global.__maineffect_sb__ = global.__maineffect_sb__? global.__maineffect_sb__ : {}    
+    Sandbox.reset(options.sandbox)
+
+    // console.log(Sandbox.getCode())
+    // Let us do what require does
+    const fnAbsName = require.resolve(fileName, { paths: module.parent.paths })
     
-//     return escodegen.generate(fn)
-// }
+    const { ast, code } = babel.transformFileSync(fnAbsName, { 
+        sourceType: 'module', 
+        ast: true, 
+        code: true, 
+        plugins: [callRemover(options), ] 
+    })
 
-const defaultOptions = { 
-    removeSideEffects: true, 
-    ignoreFnCalls: 'setup',
-}
+    // console.log(code)
+    // Let us grab the cov_ function
+    const { name } = getCoverageFnName(ast)
+    // console.log('>>>>> ', name)
 
-export const parseFn = (fileName, options) => {
-    const finalOptions = options ? {...defaultOptions, ...options} : defaultOptions
-    // const filename = require.resolve(fileName)
-    // const fakeModule = {
-    //         _compile: source => {
-    //             // console.log('transformed code')
-    //             // console.log(source)
-    //         }
-    //     }
-    // // console.log(Module._extensions)
+    let testCode = `(function(exports, require, module, __filename, __dirname) {
+        ${Sandbox.getCode()}
+        ${code}
+        return ${name}
+    })({}, __maineffect_sb__.require, {}, '', '')`
 
-    // Module._extensions['.js'](fakeModule, filename)
-    // const require = createRequ/ire(import.meta.url);
-    // const m = module.require(fileName)
-    // console.log('Resolving ', fileName, module.parent.paths)
-    
-    
+    const covFn = vm.runInThisContext(testCode)
+    Sandbox.set(`${name}`, covFn)
+    Sandbox.set('covFnName', name)
 
-    let code
-    if (typeof fileName === 'function' ){
-        code = fileName.toString()
-    } else {
-        const fnAbsName = require.resolve(fileName, {paths: module.parent.paths})
-        const fs = require('fs')
-        code = fs.readFileSync(fnAbsName, 'utf8')
-        // console.log(fnAbsName)
-    }
-    
-    // if (finalOptions.removeSideEffects) {
-    //     const { ignoreFnCalls } = finalOptions
-    //     code = removeFunctionCalls(code, Array.isArray(ignoreFnCalls) ? ignoreFnCalls : [ignoreFnCalls])
-    // }
-
-    const sb = vm.createContext({setTimeout, console})
-
-    // Coverage
-    // const instrumentedCode = instrumenter.instrumentSync(code, fileName)
-    // vm.runInContext(instrumentedCode, sb)    
-    return CodeFragment(code, sb)   
-}
-
-export const parseStr = (code) => {
-    return CodeFragment(code)
+    // console.log('>>>>> ', Sandbox.getCode())
+    return CodeFragment(ast)
 }
 
 export const load = parseFn
+export const parse = parseFn
 
 export default {
     parseFn,
-    parseStr,
     load,
-    parse: parseFn
+    parse: parseFn,
+    require: parseFn
 }

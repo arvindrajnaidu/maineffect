@@ -4,7 +4,7 @@
   "description": "Writing tests by redacting instead of mocking.",
   "main": "dist/maineffect.js",
   "scripts": {
-    "test": "mocha test/**/*.test.js --require @babel/register",
+    "test": "nyc mocha test/**/Greeting.test.js --require @babel/register",
     "test-dev": "mocha --timeout 10000  --require @babel/register --watch",
     "build": "npx webpack --config webpack.config.js"
   },
@@ -24,17 +24,16 @@
   "license": "MIT",
   "dependencies": {
     "@babel/core": "^7.4.0",
+    "@babel/plugin-transform-spread": "^7.8.3",
     "@babel/preset-env": "^7.4.2",
     "@babel/preset-react": "^7.8.3",
     "@babel/register": "^7.4.0",
-    "acorn": "^7.0.0",
-    "acorn-jsx": "^5.1.0",
     "babel-loader": "^8.0.5",
-    "escodegen": "^1.11.1",
-    "jsx-transpiler": "^0.1.4",
+    "istanbul-api": "^2.1.1",
     "traverse": "^0.6.6"
   },
   "devDependencies": {
+    "babel-plugin-istanbul": "^6.0.0",
     "chai": "^4.2.0",
     "mocha": "^7.0.1",
     "nodemon": "1.12.0",
@@ -48,6 +47,9 @@
   },
   "nyc": {
     "all": true,
+    "cache": false,
+    "sourceMap": false,
+    "instrument": false,
     "include": [
       "src/examples/**/*.js"
     ],
