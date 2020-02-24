@@ -7,10 +7,10 @@ import path from 'path'
 
 const Sandbox = (fileName, state) => {
     const namespace = fileName.replace('.', '_').replace('-', '_').split(path.sep).slice(1).join('_')
-    global.__maineffect_sb__ = global.__maineffect_sb__ ? global.__maineffect_sb__ : {}
-    global.__maineffect_sb__[namespace] = global.__maineffect_sb__[namespace] ? global.__maineffect_sb__[namespace] : state
+    global.__maineffect__ = global.__maineffect__ ? global.__maineffect__ : {}
+    global.__maineffect__[namespace] = global.__maineffect__[namespace] ? global.__maineffect__[namespace] : state
 
-    const fileSB = global.__maineffect_sb__[namespace]
+    const fileSB = global.__maineffect__[namespace]
     return {
         namespace,
         get: (key) => fileSB[key],
@@ -20,7 +20,7 @@ const Sandbox = (fileName, state) => {
             return Object.keys(fileSB).reduce((acc, curr) => {
                 return `
                     ${acc}
-                    const ${curr} = __maineffect_sb__.${namespace}.${curr}
+                    const ${curr} = __maineffect__.${namespace}.${curr}
                 `
             }, '')
 
@@ -103,7 +103,6 @@ const evaluateScript = (thisParam = null, ast, sb, ...args) => {
 const CodeFragment = (ast, sb) => {
     return {
         find: (key) => {
-            
             const fn = traverse(ast).reduce(function (acc, x) {
                 if (x &&
                     x.type === 'VariableDeclarator' &&
@@ -149,6 +148,9 @@ const CodeFragment = (ast, sb) => {
             }).code
         },
         print: function (logger = console.log) {
+            const scriptSrc = babel.transformFromAstSync(ast, null, {
+                filename: 'fake'
+            }).code
             logger(scriptSrc)
             return this
         },
@@ -160,7 +162,7 @@ const CodeFragment = (ast, sb) => {
                         this.update({
                             ...x, init: {
                                 "type": "Identifier",
-                                "name": `__maineffect_sb__.${sb.namespace}.${getReplacementKey(key)}`
+                                "name": `__maineffect__.${sb.namespace}.${getReplacementKey(key)}`
                             }
                         })
                     } else if (x.id && x.id.type === 'ObjectPattern') {
@@ -215,7 +217,7 @@ export const parseFn = (fileName, options = {sandbox: {}, destroy: []}) => {
         ${sb.getCode()}
         ${code}
         return ${name}
-    })({}, __maineffect_sb__.require, {}, '', '')`
+    })({}, __maineffect__.require, {}, '', '')`
 
     const covFn = vm.runInThisContext(testCode)
     sb.set(`${name}`, covFn)

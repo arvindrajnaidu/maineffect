@@ -3,7 +3,6 @@ import { stub } from 'sinon'
 import { parse } from '../src/maineffect'
 
 const parsed = parse(`${__dirname}/../src/examples/casino.js`, {
-    // destroy: ['log', 'info', 'Logger'],
     sandbox: {
         request: () => 'Joe',
         Logger: () => ({
