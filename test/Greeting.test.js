@@ -8,8 +8,7 @@ describe('Greeeting', () => {
     const parsed = load('../src/examples/Greeting.js', {
         sandbox: {
             React
-        },
-        destroy: []
+        }
     })
 
     describe('constructor()', () => {

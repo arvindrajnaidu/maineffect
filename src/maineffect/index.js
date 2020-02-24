@@ -2,6 +2,7 @@
 import vm from 'vm'
 import traverse from 'traverse'
 import * as babel from "@babel/core"
+import babelTraverse from "@babel/traverse";
 import path from 'path'
 
 const Sandbox = (fileName, state) => {
@@ -11,6 +12,7 @@ const Sandbox = (fileName, state) => {
 
     const fileSB = global.__maineffect_sb__[namespace]
     return {
+        namespace,
         get: (key) => fileSB[key],
         set: (key, val) => fileSB[key] = val,
         reset: (val) => fileSB = val,
@@ -28,34 +30,22 @@ const Sandbox = (fileName, state) => {
 
 const getReplacementKey = key => `__maineffect_${key}_replacement__`
 
-const getFirstIdentifier = (node) => {
-    let firstIdentifier = null
-    traverse(node).forEach((x) => {
-        if (!firstIdentifier && x && x.type === 'Identifier') {
-            firstIdentifier = x
-        }
-    })
-    return firstIdentifier
-}
-
 const getCoverageFnName = (node) => {
     let firstIdentifier = null
-    traverse(node).forEach((x) => {
-        if (!firstIdentifier && x && x.type === 'Identifier' && x.name && x.name.indexOf('cov_') === 0) {
-            firstIdentifier = x
+    babelTraverse(node, {
+        FunctionDeclaration(path) {
+            if (path.node.id.name.indexOf('cov_') === 0) {
+                firstIdentifier = path.node.id
+                return
+            }
         }
-    })
+    });
     return firstIdentifier
 }
 
-const callRemover = (options) => () => {
+const ImportRemover = (options) => () => {
     return {
       visitor: {
-        CallExpression(path, state) {
-            if (options.destroy.includes(path.node.callee.name)) {
-                path.remove()
-            }
-        },
         ImportDeclaration(path, state) {
             path.remove()
         }
@@ -105,7 +95,7 @@ const evaluateScript = (thisParam = null, ast, sb, ...args) => {
                 }
             })()
         `
-    
+    // console.log(testCode)
     const testResult = vm.runInThisContext(testCode)
     return testResult
 }
@@ -113,6 +103,7 @@ const evaluateScript = (thisParam = null, ast, sb, ...args) => {
 const CodeFragment = (ast, sb) => {
     return {
         find: (key) => {
+            
             const fn = traverse(ast).reduce(function (acc, x) {
                 if (x &&
                     x.type === 'VariableDeclarator' &&
@@ -169,7 +160,7 @@ const CodeFragment = (ast, sb) => {
                         this.update({
                             ...x, init: {
                                 "type": "Identifier",
-                                "name": `__maineffect_sb__.${getReplacementKey(key)}`
+                                "name": `__maineffect_sb__.${sb.namespace}.${getReplacementKey(key)}`
                             }
                         })
                     } else if (x.id && x.id.type === 'ObjectPattern') {
@@ -196,21 +187,6 @@ const CodeFragment = (ast, sb) => {
                 return prev
             }, this)
         },
-        destroy: (key) => {
-            const fn = traverse(ast).map(function (x) {
-                if (x && (x.type === 'CallExpression') && x.callee) {
-                    // Under this callee if the first identifier matches key ... destroy
-                    const firstIdentifierNode = getFirstIdentifier(x.callee)
-                    if (firstIdentifierNode && firstIdentifierNode.name === key) {
-                        this.update({
-                            "type": "BlockStatement",
-                            "body": []
-                        })
-                    }
-                }
-            })
-            return CodeFragment(fn, sb)
-        },
         callWith: (...args) => {
             return evaluateScript(null, ast, sb, ...args)
         },
@@ -229,12 +205,12 @@ export const parseFn = (fileName, options = {sandbox: {}, destroy: []}) => {
         sourceType: 'module', 
         ast: true, 
         code: true, 
-        plugins: [callRemover(options), ] 
+        plugins: [ImportRemover(options),] 
     })
 
     // Let us grab the cov_ function
     const { name } = getCoverageFnName(ast)
-
+    // console.log(code)
     let testCode = `(function(exports, require, module, __filename, __dirname) {
         ${sb.getCode()}
         ${code}

@@ -3,9 +3,12 @@ import { stub } from 'sinon'
 import { parse } from '../src/maineffect'
 
 const parsed = parse(`${__dirname}/../src/examples/casino.js`, {
-    destroy: ['log'],
+    // destroy: ['log', 'info', 'Logger'],
     sandbox: {
-        request: () => 'Joe'
+        request: () => 'Joe',
+        Logger: () => ({
+            info: () => {}
+        })
     }
 })
 
@@ -15,7 +18,7 @@ describe('casino', () => {
         it('should return undefined', async () => {
             const sendStub = stub()
             const result = await handler
-                                    .destroy('log')
+                                    .provide('log', {info: () => {}})
                                     // .fold('myName', 'Joe')
                                     // .provide('_https', {request: () => 'Joe'})
                                     .provide('Math', {random: () => 1})

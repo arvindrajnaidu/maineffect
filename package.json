@@ -28,6 +28,7 @@
     "@babel/preset-env": "^7.4.2",
     "@babel/preset-react": "^7.8.3",
     "@babel/register": "^7.4.0",
+    "@babel/traverse": "^7.8.4",
     "babel-loader": "^8.0.5",
     "istanbul-api": "^2.1.1",
     "traverse": "^0.6.6"
