@@ -6,10 +6,15 @@ const parsed = parse('../src/examples/fold')
 describe('fold', () => {
   const folder = parsed.find('folder')
   it('should fold ', () => {
-      const result = folder
+      const {result} = folder
                         .fold('a', 'A')
                         .callWith()
-                        .result
       expect(result.a).to.equal('A')
+  })
+
+  it('should fold ', () => {
+    const {result} = folder
+                      .callWith()
+    expect(result.a).to.deep.equal({})
   })
 })
