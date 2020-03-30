@@ -1,7 +1,7 @@
 {
   "name": "maineffect",
-  "version": "0.0.17",
-  "description": "Writing tests by redacting instead of mocking.",
+  "version": "0.0.18",
+  "description": "Testing in javascript made easier.",
   "main": "dist/maineffect.js",
   "scripts": {
     "test": "nyc mocha test/**/*.test.js --require @babel/register",
