@@ -5,7 +5,7 @@ import ReactDOMServer from 'react-dom/server'
 import sinon, { stub } from 'sinon'
 
 describe('Greeeting', () => {
-    const parsed = load('../src/examples/Greeting.js', {
+    const parsed = load(require.resolve('../src/examples/Greeting.js'), {
         sandbox: {
             React
         }

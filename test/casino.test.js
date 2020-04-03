@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { stub } from 'sinon'
 import { parse } from '../src/maineffect'
 
-const parsed = parse(`${__dirname}/../src/examples/casino.js`, {
+const parsed = parse(require.resolve('../src/examples/casino'), {
     sandbox: {
         request: () => 'Joe',
         Logger: () => ({

@@ -2,7 +2,8 @@ import { expect } from 'chai'
 import { parseFn } from '../src/maineffect'
 
 describe('basic', () => {
-    const parsed = parseFn('../src/examples/basic')
+    // console.log(require.resolve('../src/examples/basic'))
+    const parsed = parseFn(require.resolve('../src/examples/basic'))
 
     describe('sum()', () => {
         it('should return the sum of two numbers', () => {

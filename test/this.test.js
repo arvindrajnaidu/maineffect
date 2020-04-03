@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { parseFn } from '../src/maineffect'
 
 describe('This', () => {
-    const parsed = parseFn('../src/examples/this')
+    const parsed = parseFn(require.resolve('../src/examples/this'))
     
     describe('foo', () => {
         it('should return value of a', () => {

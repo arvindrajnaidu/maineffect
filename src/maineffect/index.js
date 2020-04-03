@@ -40,7 +40,7 @@ const getCoverageFnName = (node) => {
             }
         }
     });
-    return firstIdentifier
+    return firstIdentifier && firstIdentifier.name
 }
 
 const ImportRemover = (options) => () => {
@@ -96,7 +96,9 @@ const evaluateScript = (thisParam = null, ast, sb, ...args) => {
             })()
         `
     // console.log(testCode)
-    const testResult = vm.runInThisContext(testCode)
+    // console.log(global, 'Global maineffect')
+    const testResult = vm.runInThisContext(testCode)  //vm.runInNewContext(testCode, {__maineffect__})
+
     return testResult
 }
 
@@ -198,11 +200,12 @@ const CodeFragment = (ast, sb) => {
     }
 }
 
-export const parseFn = (fileName, options = {sandbox: {}, destroy: []}) => {
+export const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
     // Let us do what require does
-    const fnAbsName = require.resolve(fileName, { paths: module.parent.paths })
-    const sb = Sandbox(fnAbsName, options.sandbox) // Sandbox.reset(options.sandbox)
-    
+    // console.log(this, __filename, __dirname, '<<< Paths')
+    // const fnAbsName = require.resolve(fileName)
+    // console.log(fnAbsName, '<<<')
+    const sb = Sandbox(fnAbsName, options.sandbox) // Sandbox.reset(options.sandbox)    
     const { ast, code } = babel.transformFileSync(fnAbsName, { 
         sourceType: 'module', 
         ast: true, 
@@ -210,18 +213,22 @@ export const parseFn = (fileName, options = {sandbox: {}, destroy: []}) => {
         plugins: [ImportRemover(options),] 
     })
 
+    // console.log('HERER', code)
     // Let us grab the cov_ function
-    const { name } = getCoverageFnName(ast)
+    const coverageFnName = getCoverageFnName(ast)
     // console.log(code)
     let testCode = `(function(exports, require, module, __filename, __dirname) {
         ${sb.getCode()}
         ${code}
-        return ${name}
-    })({}, __maineffect__.require, {}, '', '')`
+        return ${coverageFnName}
+    })({}, ()=>{}, {}, '', '')`
 
-    const covFn = vm.runInThisContext(testCode)
-    sb.set(`${name}`, covFn)
-    sb.set('covFnName', name)
+    // console.log(testCode)
+    if (coverageFnName) {
+        const covFn = vm.runInThisContext(testCode)
+        sb.set(`${coverageFnName}`, covFn)    
+    }
+    // sb.set('covFnName', coverageFnName)
 
     return CodeFragment(ast, sb)
 }

@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { parseFn } from '../src/maineffect'
 
 describe('Side Effects', () => {
-    const parsed = parseFn(`${__dirname}/../src/examples/side-effects.js`)
+    const parsed = parseFn(require.resolve('../src/examples/side-effects.js'))
     
     describe('generateFoo()', () => {
         it('should return a word', () => {
