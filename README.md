@@ -1,12 +1,21 @@
-# Maineffect
+# Maineffect - [Beta]
+## Testing so bold, it does not require anything.
 
-Writing tests by redacting source code, instead of mocking.
+Maineffect enables you to write tests faster by helping you easily isolate the test execution path. Instead of requiring modules and their dependencies, Maineffect "parses" the module to test into it's [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) representation.
 
-In software testing, each test exercises a particular branch of execution. Maineffect helps you isolate this branch for easier testing.
+From there on it one can traverse the tree to **find** functions they intend to test. Private functions, class methods and just about anything can be tested this way.
+
+### Warning
+This is not production ready at this point. Will be releasing a more stable version depending on feedback.
+
+### Demo
+
+https://www.youtube.com/playlist?list=PLvTEsBHbZnNGwLD3Uy5YEBaKv417-tJGH  
 
 ### Installation
 
-` $ npm install maineffect`
+`$ npm install maineffect`
+
 
 ### Quickstart
 
@@ -16,88 +25,81 @@ Let us dive right in with some examples.
 
 **Parse** the file (Do not require or import). **Find** the function you want to test by name and **CallWith** the test arguments.
 
-##### Calculator.js
+##### math.js
 
-	const logger = import('Logger')
-	const sum = (a,b) => a + b
+	import log from 'logger'
+	
+	const add = (a,b) => a + b
 
-##### Calculator.test.js
+##### math.test.js
 
-	const {parseFn} = import 'maineffect'
-	const parsed = parseFn(`${__dirname}/calculator.js`)
+	const {load} = import 'maineffect'
+	const math = load(require.resolve('./math'))
 
-	describe('sum()', () => {
-		it('should return the sum of two numbers', () => {
-			let { result } = parsed.find('sum').callWith(1, 2)
-			expect(result).to.equal(3)
-		})
+	describe ('math', () => {
+	  describe('add', () => {
+	    it('should return 2 when called with 1, 1', () => {
+		const {result} = math.find('add').callWith(1, 1)
+		expect(result).to.equal(2)
+	    })
+	  })
 	})
 
 #### Explanation
-Here, we wanted to test the **sum** function of **Calculator.js**. Generally we import the file into our test and call **sum**. Instead we parsed the raw file, and found the **sum** function and called it with the arguments.
+Here, we wanted to test the **add** function of **math.js**. Generally we import the file into our test and call **sum**. However with Maineffect, we parse the raw file, and find the **add** function. Just like finding a `div` element in the DOM. We then call it with our arguments.
 
-- We never had to import **Logger**. This let's us test files ignoring it's dependencies. *Awesome!*
-- We did not even care if **sum** was exported. *What?*
-- And we still tested the function. *Black Magic*
+#### Advantages
+
+- We can now test private functions. In math.js above we did not export add.
+- We dot care about dependencies in the test. Like above, we don't even have a ``logger`` module installed.
 
 #### How it works
-We simply parse the raw text of the js file to get the [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree "AST"). In that we **find** the node with name **sum**. Then we generate code with that node. We test this code that we generated, not the original file.
+We simply parse the raw math.js file to get the [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree "AST"). In that we **find** the node with name **add**. Then we generate code with that node. We test this code that we generated, not the original file.
 
-##### Example #2
-**Provide** a variable with any value. **Fold** stuff you don't care about. **Destroy** function calls that are useless for the test.
+#### Example #2
+**Provide** a variable with any value. **Fold** stuff you don't care about.
 
-##### Casino.js
+##### taxes.js
 
 	import log from 'Logger'
-	import fetch from './fetcher'
-	import randomizer from 'randomizer'
+	import getTaxeRate from 'irs'
 
-	const handler = async (req, res) => {
-		log.info('Inside handler')
-		const dealerName = await fetch('/dealer')
-		let message = `Hello ${req.query.user}. I am ${dealerName}. Your lucky number is ${randomizer()}`
-		return res.send(message)
+	const getAmountAfterTaxes = async (amount) => {
+	  log('Inside getTaxes')
+	  const taxRate = await getTaxeRate()
+	  return amount - amount * taxRate
 	}
 
-export default handler
-
-##### Casino.test.js
+##### taxes.test.js
 
 	import { expect } from 'chai'
-	import { stub } from 'sinon'
-	import { parseFn } from '../src/maineffect'
+	import { load } from '../src/maineffect'
+  
+	const taxes = load(require.resolve('./taxes'))
 
-	const parsed = parseFn(`${__dirname}/../src/examples/handler.js`)
-
-	describe('handler()', () => {
-		const handler = parsed.find('handler')
-		it('should return undefined', async () => {
-			const sendStub = stub()
-			const result = await handler
-						.destroy('log')
-						.fold('dealerName', 'Joe')
-						.provide('randomizer', () => 1)
-						.callWith({
-							query: {
-								user: 'James'
-							}
-						}, {send: sendStub})
-						.result
-			const expected = `Hello James. I am Joe. Your lucky number is 1`
-			expect(sendStub.calledWithExactly(expected)).to.equal(true)
-		})
+	describe ('taxes', () => {
+	  describe('getTaxes', () => {
+	    it('should return 50 when called with 100 and a rate of 0.5', async () => {
+          const {result} = taxes.find('getAmountAfterTaxes')
+                            .provide('log', () => {})					
+                            .fold('taxRate', 0.5)
+                            .callWith(100)
+          expect(await result).to.equal(50)
+	    })
+	  })
 	})
 
 #### Explanation
-Here, we want to test the **handler** function of **Casino.js**. The function takes **request** and **response** objects as arguments. Logs something, fetches a name asynchronously, gets a random number and assembles a message. Finally, it writes this message to the response.
+Here, we want to test the **getAmountAfterTaxes** function of **taxes.js**. Once we ``find`` the function, we ``provide`` log as an empty function (stubs also work here). Then we ``fold`` the **taxRate** constant to the value **0.5** and call the function.
 
-- Instead of stubbing **log.info**, we **destroy** that call. *Boom!*
-- All we care about is the value of **dealerName**. We are not here to test fetch. So let us **fold** the right-hand-side of that assignment to a value we like. *Wait you could do that?*
-- Finally we need a randomizer function. Let us **provide** it to the execution environment. *This is cheating.*
-- And we still tested the function. *Voodoo shit.*
+#### Advantages
+- All we care about is the value of **taxRate**. We are not here to test getTaxeRate. So we **fold** the right-hand-side of that assignment to a value we like.
+- We can mock dependencies like **log**
+
 
 ## Development
 ### Build
+
 npx webpack --config webpack.config.js
 
 ### Test
