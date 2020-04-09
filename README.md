@@ -18,13 +18,9 @@ This is not production ready at this point. Will be releasing a more stable vers
 `$ npm install maineffect`
 
 
-### Quickstart
+### Quickstart - Example #1
 
-Let us dive right in with some examples.
-
-#### Example #1
-
-**Parse** the file (Do not require or import). **Find** the function you want to test by name and **CallWith** the test arguments.
+**Parse/Load** the file (Do not require or import). **Find** the function you want to test by name and **CallWith** arguments.
 
 ##### math.js
 
@@ -47,17 +43,14 @@ Let us dive right in with some examples.
 	})
 
 #### Explanation
-Here, we wanted to test the **add** function of **math.js**. Generally we import the file into our test and call **sum**. However with Maineffect, we parse the raw file, and find the **add** function. Just like finding a `div` element in the DOM. We then call it with our arguments.
+Here, we wanted to test the **add** function of **math.js**. Generally we import the file into our test and call **add**. However with Maineffect, we parse the raw file, and find the **add** function. Just like finding a `div` element in the DOM. We then call it with our arguments.
 
 #### Advantages
 
 - We can now test private functions. In math.js above we did not export add.
 - We dot care about dependencies in the test. Like above, we don't even have a ``logger`` module installed.
 
-#### How it works
-We simply parse the raw math.js file to get the [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree "AST"). In that we **find** the node with name **add**. Then we generate code with that node. We test this code that we generated, not the original file.
-
-#### Example #2
+### Quickstart - Example #2
 **Provide** a variable with any value. **Fold** stuff you don't care about.
 
 ##### taxes.js
@@ -91,7 +84,7 @@ We simply parse the raw math.js file to get the [AST](https://en.wikipedia.org/w
 	})
 
 #### Explanation
-Here, we want to test the **getAmountAfterTaxes** function of **taxes.js**. Once we ``find`` the function, we ``provide`` log as an empty function (stubs also work here). Then we ``fold`` the **taxRate** constant to the value **0.5** and call the function.
+Here, we want to test the **getAmountAfterTaxes** function of **taxes.js**. Once we ``find`` the function, we ``provide`` **log** as an empty function (stubs also work here). Then we ``fold`` the **taxRate** constant to the value **0.5** and call the function.
 
 #### Advantages
 - All we care about is the value of **taxRate**. We are not here to test getTaxeRate. So we **fold** the right-hand-side of that assignment to a value we like.
