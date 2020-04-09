@@ -10,7 +10,8 @@ This is not production ready at this point. Will be releasing a more stable vers
 
 ### Demo
 
-https://www.youtube.com/playlist?list=PLvTEsBHbZnNGwLD3Uy5YEBaKv417-tJGH  
+[Watch the video](https://www.youtube.com/playlist?list=PLvTEsBHbZnNGwLD3Uy5YEBaKv417-tJGH)
+
 
 ### Installation
 
