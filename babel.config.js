@@ -8,8 +8,12 @@ const presets = [
       },
     ],
     "@babel/preset-react",
+    "@babel/preset-typescript",
   ];
 
-const plugins = ["@babel/plugin-transform-spread", "istanbul"]
+const plugins = [
+  "@babel/plugin-transform-spread", 
+  "istanbul"
+]
 
 module.exports = { presets, plugins };

@@ -1,11 +1,11 @@
 import { expect } from 'chai'
-import { load } from '../src/maineffect'
+import { load } from '../maineffect'
 import React from 'react'
 import ReactDOMServer from 'react-dom/server'
 import sinon, { stub } from 'sinon'
 
-describe('Greeeting', () => {
-    const parsed = load(require.resolve('../src/examples/Greeting.js'), {
+describe.skip('Greeeting', () => {
+    const parsed = load(require.resolve('./Greeting.js'), {
         sandbox: {
             React
         }

@@ -1,26 +1,27 @@
 
-import vm from 'vm'
+import vm from 'node:vm'
 import traverse from 'traverse'
 import * as babel from "@babel/core"
 import babelTraverse from "@babel/traverse";
 import path from 'path'
+import fs from 'fs'
 
 const Sandbox = (fileName, state) => {
-    const namespace = fileName.replace('.', '_').replace('-', '_').split(path.sep).slice(1).join('_')
+    const namespace = fileName.replace(/\./g, '_').replace(/\-/g, '_').split(path.sep).slice(1).join('_')
     global.__maineffect__ = global.__maineffect__ ? global.__maineffect__ : {}
-    global.__maineffect__[namespace] = global.__maineffect__[namespace] ? global.__maineffect__[namespace] : state
+    global.__maineffect__[namespace] = global.__maineffect__[namespace] ? global.__maineffect__[namespace] : {...state}
 
     const fileSB = global.__maineffect__[namespace]
     return {
         namespace,
-        get: (key) => fileSB[key],
+        // get: (key) => fileSB[key],
         set: (key, val) => fileSB[key] = val,
         reset: (val) => fileSB = val,
         getCode: () => {
             return Object.keys(fileSB).reduce((acc, curr) => {
                 return `
                     ${acc}
-                    const ${curr} = __maineffect__.${namespace}.${curr}
+                    const ${curr} = __maineffect__.${namespace}.${curr};
                 `
             }, '')
 
@@ -72,7 +73,7 @@ const getIsolatedFn = (init) => {
 
 const evaluateScript = (thisParam = null, ast, sb, ...args) => {
     const { code } = babel.transformFromAstSync(ast, null, {
-        filename: 'fake'
+        filename: 'fake',
     })    
 
     sb.set('__maineffect_args__', args)
@@ -86,8 +87,44 @@ const evaluateScript = (thisParam = null, ast, sb, ...args) => {
                     ${code}
                     const __maineffect_result__ = __maineffect_evaluated__.apply(__maineffect_this__, __maineffect_args__)
                     return {
-                        result: __maineffect_result__
+                        result: __maineffect_result__,
+                        //__coverage__,
                     }
+                } catch (e) {
+                    return {
+                        exception: e
+                    }
+                }
+            })();
+        `
+    console.log(testCode, '<<< Instab')
+    // console.log(global.__coverage__)
+    
+    const contextObject = { ...global };
+    vm.createContext(contextObject);
+    const testResult = vm.runInContext(testCode, contextObject)
+
+    global.__coverage__ = {...global.__coverage__, ...testResult.__coverage__}
+    // console.log(testResult.__coverage__)
+    // const testResult = vm.runInThisContext(testCode)
+    return testResult
+}
+
+const getClosedFunction = (thisParam = null, ast, sb, ...args) => {
+    const { code } = babel.transformFromAstSync(ast, null, {
+        filename: 'fake'
+    })    
+
+    sb.set('__maineffect_args__', args)
+    sb.set('__maineffect_this__', thisParam)
+    const closures = sb.getCode()
+    // console.log('>>>>', closures, '<<')
+    let testCode = `
+            (function () {
+                ${closures}
+                try {
+                    ${code}
+                    return __maineffect_evaluated__;
                 } catch (e) {
                     return {
                         exception: e
@@ -95,10 +132,12 @@ const evaluateScript = (thisParam = null, ast, sb, ...args) => {
                 }
             })()
         `
-    // console.log(testCode)
-    // console.log(global, 'Global maineffect')
-    const testResult = vm.runInThisContext(testCode)  //vm.runInNewContext(testCode, {__maineffect__})
+    const contextObject = { ...global };
+    vm.createContext(contextObject);
+    const testResult = vm.runInContext(testCode, contextObject)
 
+    // console.log(testCode, '<<< test code')
+    // const testResult = vm.runInThisContext(testCode)
     return testResult
 }
 
@@ -106,6 +145,7 @@ const CodeFragment = (ast, sb) => {
     return {
         find: (key) => {
             const fn = traverse(ast).reduce(function (acc, x) {
+                // if (x && x.type) console.log(x && x.type);
                 if (x &&
                     x.type === 'VariableDeclarator' &&
                     x.id && x.id.name === key) {
@@ -131,6 +171,11 @@ const CodeFragment = (ast, sb) => {
                     x.id && x.id.type === 'Identifier' &&
                     x.id.name === key) {
                     return x
+                } else if (x &&
+                    x.type === 'FunctionDeclaration' &&
+                    x.id && x.id.type === 'Identifier' &&
+                    x.id.name === key) {
+                    return x
                 }
                 return acc
             }, null)
@@ -138,6 +183,7 @@ const CodeFragment = (ast, sb) => {
                 throw new Error('Function not found')
             }
             var newAst = babel.types.program([fn])
+
             return CodeFragment(newAst, sb)
         },
         provide: function (key, stub) {
@@ -191,12 +237,18 @@ const CodeFragment = (ast, sb) => {
                 return prev
             }, this)
         },
-        callWith: (...args) => {
-            return evaluateScript(null, ast, sb, ...args)
+        callWith (...args) {
+            return evaluateScript(null, ast, sb, ...args);
         },
-        apply: (thisParam, ...args) => {
-            return evaluateScript(thisParam, ast, sb, ...args)
-        }
+        apply (thisParam, ...args) {
+            return evaluateScript(thisParam, ast, sb, ...args);
+        },
+        getFn (...args) {
+            return getClosedFunction(null, ast, sb, ...args);
+        },
+        getSandbox () {
+            return sb
+        },
     }
 }
 
@@ -205,6 +257,7 @@ export const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
     // console.log(this, __filename, __dirname, '<<< Paths')
     // const fnAbsName = require.resolve(fileName)
     // console.log(fnAbsName, '<<<')
+    // console.log(options.sandbox, '<<< w abt this?')
     const sb = Sandbox(fnAbsName, options.sandbox) // Sandbox.reset(options.sandbox)    
     const { ast, code } = babel.transformFileSync(fnAbsName, { 
         sourceType: 'module', 
@@ -213,23 +266,27 @@ export const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
         plugins: [ImportRemover(options),] 
     })
 
-    // console.log('HERER', code)
+    // console.log('HERER')
     // Let us grab the cov_ function
     const coverageFnName = getCoverageFnName(ast)
     // console.log(code)
     let testCode = `(function(exports, require, module, __filename, __dirname) {
         ${sb.getCode()}
         ${code}
+        
         return ${coverageFnName}
-    })({}, ()=>{}, {}, '', '')`
+    })({}, ()=>{}, {}, '', '');
+    `
 
-    // console.log(testCode)
+    fs.writeFileSync(__dirname + '/tmp.js', testCode);
+    
     if (coverageFnName) {
         const covFn = vm.runInThisContext(testCode)
         sb.set(`${coverageFnName}`, covFn)    
     }
     // sb.set('covFnName', coverageFnName)
 
+    // console.log(sb.get('totalRisk'), '<<< Orign SB')
     return CodeFragment(ast, sb)
 }
 

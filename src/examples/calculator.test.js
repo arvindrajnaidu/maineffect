@@ -1,7 +1,7 @@
 import { expect } from 'chai'
-import { parseFn } from '../src/maineffect'
+import { parseFn } from '../maineffect'
 
-const parsed = parseFn(require.resolve('../src/examples/calculator'))
+const parsed = parseFn(require.resolve('./calculator'))
 describe('sum()', () => {
     it('should return the sum of two numbers', () => {
         let { result } = parsed.find('sum').callWith(1, 2)

@@ -1,8 +1,8 @@
 import { expect } from 'chai'
-import { parseFn } from '../src/maineffect'
+import { parseFn } from '../maineffect'
 
 describe('This', () => {
-    const parsed = parseFn(require.resolve('../src/examples/this'))
+    const parsed = parseFn(require.resolve('./this'))
     
     describe('foo', () => {
         it('should return value of a', () => {

@@ -1,7 +1,7 @@
 import { expect } from 'chai'
-import { parse } from '../src/maineffect'
+import { parse } from '../maineffect'
 
-const parsed = parse(require.resolve('../src/examples/fold'))
+const parsed = parse(require.resolve('./fold'))
 
 describe('fold', () => {
   const folder = parsed.find('folder')

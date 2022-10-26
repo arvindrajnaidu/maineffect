@@ -1,8 +1,8 @@
 import { expect } from 'chai'
-import { parseFn } from '../src/maineffect'
+import { parseFn } from '../maineffect'
 
 describe('Side Effects', () => {
-    const parsed = parseFn(require.resolve('../src/examples/side-effects.js'))
+    const parsed = parseFn(require.resolve('./side-effects.js'))
     
     describe('generateFoo()', () => {
         it('should return a word', () => {

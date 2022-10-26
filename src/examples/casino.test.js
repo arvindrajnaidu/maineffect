@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { stub } from 'sinon'
-import { parse } from '../src/maineffect'
+import { parse } from '../maineffect'
 
-const parsed = parse(require.resolve('../src/examples/casino'), {
+const parsed = parse(require.resolve('./casino'), {
     sandbox: {
         request: () => 'Joe',
         Logger: () => ({
