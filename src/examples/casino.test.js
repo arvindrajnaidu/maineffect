@@ -18,8 +18,6 @@ describe('casino', () => {
             const sendStub = stub()
             const result = await handler
                                     .provide('log', {info: () => {}})
-                                    // .fold('myName', 'Joe')
-                                    // .provide('_https', {request: () => 'Joe'})
                                     .provide('Math', {random: () => 1})
                                     .callWith({query: {user: 'James'}}, {send: sendStub})
                                     .result

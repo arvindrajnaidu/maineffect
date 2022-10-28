@@ -21,47 +21,47 @@
                     
                     
                     
-                    const React = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.React;
+                    const React = getClosureValue("React");
                 
-                    const useState = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.useState;
+                    const useState = getClosureValue("useState");
                 
-                    const useCallback = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.useCallback;
+                    const useCallback = getClosureValue("useCallback");
                 
-                    const DataGrid = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.DataGrid;
+                    const DataGrid = getClosureValue("DataGrid");
                 
-                    const formatValueOrCurrency = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.formatValueOrCurrency;
+                    const formatValueOrCurrency = getClosureValue("formatValueOrCurrency");
                 
-                    const getSortFieldFromMap = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.getSortFieldFromMap;
+                    const getSortFieldFromMap = getClosureValue("getSortFieldFromMap");
                 
-                    const RISK_DATA_MAP = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.RISK_DATA_MAP;
+                    const RISK_DATA_MAP = getClosureValue("RISK_DATA_MAP");
                 
-                    const useMemo = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.useMemo;
+                    const useMemo = getClosureValue("useMemo");
                 
-                    const symbol = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.symbol;
+                    const symbol = getClosureValue("symbol");
                 
-                    const nSRBuy = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.nSRBuy;
+                    const nSRBuy = getClosureValue("nSRBuy");
                 
-                    const nSRSell = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.nSRSell;
+                    const nSRSell = getClosureValue("nSRSell");
                 
-                    const nSRNet = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.nSRNet;
+                    const nSRNet = getClosureValue("nSRNet");
                 
-                    const uFBuy = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.uFBuy;
+                    const uFBuy = getClosureValue("uFBuy");
                 
-                    const uFSell = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.uFSell;
+                    const uFSell = getClosureValue("uFSell");
                 
-                    const uFNet = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.uFNet;
+                    const uFNet = getClosureValue("uFNet");
                 
-                    const frackerInventory = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.frackerInventory;
+                    const frackerInventory = getClosureValue("frackerInventory");
                 
-                    const frackerPL = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.frackerPL;
+                    const frackerPL = getClosureValue("frackerPL");
                 
-                    const overnightErrorAccount = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.overnightErrorAccount;
+                    const overnightErrorAccount = getClosureValue("overnightErrorAccount");
                 
-                    const currencyRenderer = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.currencyRenderer;
+                    const currencyRenderer = getClosureValue("currencyRenderer");
                 
-                    const exposure = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.exposure;
+                    const exposure = getClosureValue("exposure");
                 
-                    const totalRisk = __maineffect__.Users_anaidu_myws_maineffect_src_examples_MarketTotalRisk_tsx.totalRisk;
+                    const totalRisk = getClosureValue("totalRisk");
                 
         "use strict";
 
@@ -294,6 +294,6 @@ const MarketTotalRisk = ({
 };
 exports.MarketTotalRisk = MarketTotalRisk;
         
-        return null
+        return {covFnName: null, cov: __coverage__}
     })({}, ()=>{}, {}, '', '');
     

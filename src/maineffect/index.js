@@ -7,24 +7,35 @@ import path from 'path'
 import fs from 'fs'
 
 const Sandbox = (fileName, state) => {
-    const namespace = fileName.replace(/\./g, '_').replace(/\-/g, '_').split(path.sep).slice(1).join('_')
-    global.__maineffect__ = global.__maineffect__ ? global.__maineffect__ : {}
-    global.__maineffect__[namespace] = global.__maineffect__[namespace] ? global.__maineffect__[namespace] : {...state}
+    const closures = {
+        ...state,
+    };
+    const namespace = fileName.replace(/\./g, '_').replace(/\-/g, '_').split(path.sep).slice(1).join('_');
+    // global.__maineffect__ = global.__maineffect__ ? global.__maineffect__ : {}
+    // global.__maineffect__[namespace] = global.__maineffect__[namespace] ? global.__maineffect__[namespace] : {...state}
 
-    const fileSB = global.__maineffect__[namespace]
+    // const fileSB = global.__maineffect__[namespace]
     return {
         namespace,
         // get: (key) => fileSB[key],
-        set: (key, val) => fileSB[key] = val,
-        reset: (val) => fileSB = val,
-        getCode: () => {
-            return Object.keys(fileSB).reduce((acc, curr) => {
+        set: (key, val) => {
+            // fileSB[key] = val;
+            closures[key] = val;
+        },
+        // reset: (val) => fileSB = val,
+        getClosuresCode () {
+            return Object.keys(closures).reduce((acc, curr) => {
                 return `
                     ${acc}
-                    const ${curr} = __maineffect__.${namespace}.${curr};
+                    const ${curr} = getClosureValue("${curr}");
                 `
             }, '')
-
+        },
+        getClosures () {
+            return closures;
+        },
+        getClosureValue (key) {
+            return closures[key]
         }
     }
 }
@@ -71,72 +82,66 @@ const getIsolatedFn = (init) => {
     }
 }
 
-const evaluateScript = (thisParam = null, ast, sb, ...args) => {
+const getEvaluatedResultCode = ({closureCode, code}) => `
+(function () {
+    ${closureCode}
+    try {
+        ${code}
+        const result = __maineffect_evaluated__.apply(__maineffect_this__, __maineffect_args__)
+        return {
+            result,
+            //__coverage__,
+        }
+    } catch (e) {
+        return {
+            exception: e
+        }
+    }
+})();
+`
+const getEvaluatedCode = ({closureCode, code}) => `
+(function () {
+    ${closureCode}
+    try {
+        ${code}
+        return __maineffect_evaluated__;
+    } catch (e) {
+        return {
+            exception: e
+        }
+    }
+})()
+`
+
+const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
     const { code } = babel.transformFromAstSync(ast, null, {
         filename: 'fake',
     })    
 
     sb.set('__maineffect_args__', args)
     sb.set('__maineffect_this__', thisParam)
-    const closures = sb.getCode()
-    // console.log('>>>>', closures)
-    let testCode = `
-            (function () {
-                ${closures}
-                try {
-                    ${code}
-                    const __maineffect_result__ = __maineffect_evaluated__.apply(__maineffect_this__, __maineffect_args__)
-                    return {
-                        result: __maineffect_result__,
-                        //__coverage__,
-                    }
-                } catch (e) {
-                    return {
-                        exception: e
-                    }
-                }
-            })();
-        `
-    console.log(testCode, '<<< Instab')
-    // console.log(global.__coverage__)
+    const closureCode = sb.getClosuresCode()
+    const closures = sb.getClosures();
+    const getClosureValue = (key) => {
+        return closures[key];
+    }
+
+    var testCode;
     
-    const contextObject = { ...global };
+    if (getFn) {
+        testCode = getEvaluatedCode({code, closureCode});
+    } else {
+        testCode = getEvaluatedResultCode({code, closureCode});
+    }
+    // console.log(testCode, '<<< Instab')
+    // console.log(this)
+    // console.log(this._environment.global.__coverage__)
+    const contextObject = { ...global, getClosureValue };
     vm.createContext(contextObject);
     const testResult = vm.runInContext(testCode, contextObject)
 
-    global.__coverage__ = {...global.__coverage__, ...testResult.__coverage__}
+    // global.__coverage__ = {...global.__coverage__, ...testResult.__coverage__}
     // console.log(testResult.__coverage__)
-    // const testResult = vm.runInThisContext(testCode)
-    return testResult
-}
-
-const getClosedFunction = (thisParam = null, ast, sb, ...args) => {
-    const { code } = babel.transformFromAstSync(ast, null, {
-        filename: 'fake'
-    })    
-
-    sb.set('__maineffect_args__', args)
-    sb.set('__maineffect_this__', thisParam)
-    const closures = sb.getCode()
-    // console.log('>>>>', closures, '<<')
-    let testCode = `
-            (function () {
-                ${closures}
-                try {
-                    ${code}
-                    return __maineffect_evaluated__;
-                } catch (e) {
-                    return {
-                        exception: e
-                    }
-                }
-            })()
-        `
-    const contextObject = { ...global };
-    vm.createContext(contextObject);
-    const testResult = vm.runInContext(testCode, contextObject)
-
-    // console.log(testCode, '<<< test code')
     // const testResult = vm.runInThisContext(testCode)
     return testResult
 }
@@ -210,7 +215,7 @@ const CodeFragment = (ast, sb) => {
                         this.update({
                             ...x, init: {
                                 "type": "Identifier",
-                                "name": `__maineffect__.${sb.namespace}.${getReplacementKey(key)}`
+                                "name": `getClosureValue("${getReplacementKey(key)}")`
                             }
                         })
                     } else if (x.id && x.id.type === 'ObjectPattern') {
@@ -238,13 +243,13 @@ const CodeFragment = (ast, sb) => {
             }, this)
         },
         callWith (...args) {
-            return evaluateScript(null, ast, sb, ...args);
+            return evaluateScript(null, ast, sb, false, ...args);
         },
         apply (thisParam, ...args) {
-            return evaluateScript(thisParam, ast, sb, ...args);
+            return evaluateScript(thisParam, ast, sb, false, ...args);
         },
         getFn (...args) {
-            return getClosedFunction(null, ast, sb, ...args);
+            return evaluateScript(null, ast, sb, true, ...args);
         },
         getSandbox () {
             return sb
@@ -263,7 +268,7 @@ export const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
         sourceType: 'module', 
         ast: true, 
         code: true, 
-        plugins: [ImportRemover(options),] 
+        plugins: [ImportRemover(options), "istanbul"] 
     })
 
     // console.log('HERER')
@@ -271,18 +276,29 @@ export const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
     const coverageFnName = getCoverageFnName(ast)
     // console.log(code)
     let testCode = `(function(exports, require, module, __filename, __dirname) {
-        ${sb.getCode()}
+        ${sb.getClosuresCode()}
         ${code}
         
-        return ${coverageFnName}
+        return {covFnName: ${coverageFnName}, cov: __coverage__}
     })({}, ()=>{}, {}, '', '');
     `
 
     fs.writeFileSync(__dirname + '/tmp.js', testCode);
-    
+        
     if (coverageFnName) {
-        const covFn = vm.runInThisContext(testCode)
-        sb.set(`${coverageFnName}`, covFn)    
+        if (!sb.getClosureValue) {
+            console.log('WTF?????')
+        }
+
+        const contextObject = { ...global, getClosureValue: (key) => sb.getClosureValue(key)};
+        vm.createContext(contextObject);
+        const {covFnName, cov} = vm.runInContext(testCode, contextObject)
+    
+        // global.getClosureValue = sb.getClosureValue;
+        // const {covFnName, cov} = vm.runInThisContext(testCode);
+        // console.log(cov, '<<< Coverage')
+        global.__coverage__ = cov;
+        sb.set(`${coverageFnName}`, covFnName)    
     }
     // sb.set('covFnName', coverageFnName)
 

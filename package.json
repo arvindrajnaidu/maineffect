@@ -5,7 +5,8 @@
   "main": "dist/maineffect.js",
   "scripts": {
     "test": "nyc mocha test/**/*.test.js --require @babel/register",
-    "test-dev": "nyc mocha src/**/*.test.* --require ./babel-register.js --require global-jsdom/register",
+    "test-jest": "jest src/**/*.test.* --collectCoverage",
+    "test-mocha": "nyc mocha src/**/*.test.* --require ./babel-register.js --require global-jsdom/register",
     "build": "npx webpack --config webpack.config.js"
   },
   "browserslist": [
