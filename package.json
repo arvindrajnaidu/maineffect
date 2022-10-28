@@ -1,5 +1,5 @@
 {
-  "name": "@buzzie/maineffect",
+  "name": "maineffectjs",
   "version": "0.0.1",
   "description": "Testing in javascript made easier.",
   "main": "dist/maineffect.js",
