@@ -1,6 +1,6 @@
 {
   "name": "maineffect",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Testing in javascript made easier.",
   "main": "dist/maineffect.js",
   "scripts": {

@@ -1,12 +1,9 @@
-# Maineffect - [Beta]
+# Maineffect
 ## Testing so bold, it does not require anything.
 
-Maineffect enables you to write tests faster by helping you easily isolate the test execution path. Instead of requiring modules and their dependencies, Maineffect "parses" the module to test into it's [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) representation.
+Maineffect enables you to write tests faster by helping you easily isolate the test execution path. Instead of requiring modules and their dependencies, Maineffect "parses" the module under test into it's [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) representation.
 
 From there on it one can traverse the tree to **find** functions they intend to test. Private functions, class methods and just about anything can be tested this way.
-
-### Warning
-This is not production ready at this point. Will be releasing a more stable version depending on feedback.
 
 ### Demo
 
