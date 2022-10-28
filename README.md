@@ -69,7 +69,7 @@ Here, we wanted to test the **add** function of **math.js**. Generally we import
 	const taxes = load(require.resolve('./taxes'))
 
 	describe ('taxes', () => {
-	  describe('getTaxes', () => {
+	  describe('getAmountAfterTaxes', () => {
 	    it('should return 50 when called with 100 and a rate of 0.5', async () => {
           const {result} = taxes.find('getAmountAfterTaxes')
                             .provide('log', () => {})					
