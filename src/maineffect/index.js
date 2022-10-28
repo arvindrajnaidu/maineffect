@@ -1,5 +1,5 @@
 
-import vm from 'node:vm'
+import vm from 'vm'
 import traverse from 'traverse'
 import * as babel from "@babel/core"
 import babelTraverse from "@babel/traverse";

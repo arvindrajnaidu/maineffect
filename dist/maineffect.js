@@ -91,7 +91,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -440,11 +440,17 @@ module.exports = require("path");
 
 /***/ }),
 /* 5 */
+/***/ (function(module, exports) {
+
+module.exports = require("fs");
+
+/***/ }),
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseFn", function() { return parseFn; });
+/* WEBPACK VAR INJECTION */(function(__dirname) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseFn", function() { return parseFn; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "load", function() { return load; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parse", function() { return parse; });
 /* harmony import */ var vm__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
@@ -457,6 +463,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_traverse__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_traverse__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(4);
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(path__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(5);
+/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(fs__WEBPACK_IMPORTED_MODULE_5__);
+
 
 
 
@@ -465,24 +474,35 @@ __webpack_require__.r(__webpack_exports__);
 
 
 const Sandbox = (fileName, state) => {
-    const namespace = fileName.replace('.', '_').replace('-', '_').split(path__WEBPACK_IMPORTED_MODULE_4___default.a.sep).slice(1).join('_')
-    global.__maineffect__ = global.__maineffect__ ? global.__maineffect__ : {}
-    global.__maineffect__[namespace] = global.__maineffect__[namespace] ? global.__maineffect__[namespace] : state
+    const closures = {
+        ...state,
+    };
+    const namespace = fileName.replace(/\./g, '_').replace(/\-/g, '_').split(path__WEBPACK_IMPORTED_MODULE_4___default.a.sep).slice(1).join('_');
+    // global.__maineffect__ = global.__maineffect__ ? global.__maineffect__ : {}
+    // global.__maineffect__[namespace] = global.__maineffect__[namespace] ? global.__maineffect__[namespace] : {...state}
 
-    const fileSB = global.__maineffect__[namespace]
+    // const fileSB = global.__maineffect__[namespace]
     return {
         namespace,
-        get: (key) => fileSB[key],
-        set: (key, val) => fileSB[key] = val,
-        reset: (val) => fileSB = val,
-        getCode: () => {
-            return Object.keys(fileSB).reduce((acc, curr) => {
+        // get: (key) => fileSB[key],
+        set: (key, val) => {
+            // fileSB[key] = val;
+            closures[key] = val;
+        },
+        // reset: (val) => fileSB = val,
+        getClosuresCode () {
+            return Object.keys(closures).reduce((acc, curr) => {
                 return `
                     ${acc}
-                    const ${curr} = __maineffect__.${namespace}.${curr}
+                    const ${curr} = getClosureValue("${curr}");
                 `
             }, '')
-
+        },
+        getClosures () {
+            return closures;
+        },
+        getClosureValue (key) {
+            return closures[key]
         }
     }
 }
@@ -529,35 +549,67 @@ const getIsolatedFn = (init) => {
     }
 }
 
-const evaluateScript = (thisParam = null, ast, sb, ...args) => {
+const getEvaluatedResultCode = ({closureCode, code}) => `
+(function () {
+    ${closureCode}
+    try {
+        ${code}
+        const result = __maineffect_evaluated__.apply(__maineffect_this__, __maineffect_args__)
+        return {
+            result,
+            //__coverage__,
+        }
+    } catch (e) {
+        return {
+            exception: e
+        }
+    }
+})();
+`
+const getEvaluatedCode = ({closureCode, code}) => `
+(function () {
+    ${closureCode}
+    try {
+        ${code}
+        return __maineffect_evaluated__;
+    } catch (e) {
+        return {
+            exception: e
+        }
+    }
+})()
+`
+
+const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
     const { code } = _babel_core__WEBPACK_IMPORTED_MODULE_2__["transformFromAstSync"](ast, null, {
-        filename: 'fake'
+        filename: 'fake',
     })    
 
     sb.set('__maineffect_args__', args)
     sb.set('__maineffect_this__', thisParam)
-    const closures = sb.getCode()
-    // console.log('>>>>', closures)
-    let testCode = `
-            (function () {
-                ${closures}
-                try {
-                    ${code}
-                    const __maineffect_result__ = __maineffect_evaluated__.apply(__maineffect_this__, __maineffect_args__)
-                    return {
-                        result: __maineffect_result__
-                    }
-                } catch (e) {
-                    return {
-                        exception: e
-                    }
-                }
-            })()
-        `
-    // console.log(testCode)
-    // console.log(global, 'Global maineffect')
-    const testResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInThisContext(testCode)  //vm.runInNewContext(testCode, {__maineffect__})
+    const closureCode = sb.getClosuresCode()
+    const closures = sb.getClosures();
+    const getClosureValue = (key) => {
+        return closures[key];
+    }
 
+    var testCode;
+    
+    if (getFn) {
+        testCode = getEvaluatedCode({code, closureCode});
+    } else {
+        testCode = getEvaluatedResultCode({code, closureCode});
+    }
+    // console.log(testCode, '<<< Instab')
+    // console.log(this)
+    // console.log(this._environment.global.__coverage__)
+    const contextObject = { ...global, getClosureValue };
+    vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
+    const testResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject)
+
+    // global.__coverage__ = {...global.__coverage__, ...testResult.__coverage__}
+    // console.log(testResult.__coverage__)
+    // const testResult = vm.runInThisContext(testCode)
     return testResult
 }
 
@@ -565,6 +617,7 @@ const CodeFragment = (ast, sb) => {
     return {
         find: (key) => {
             const fn = traverse__WEBPACK_IMPORTED_MODULE_1___default()(ast).reduce(function (acc, x) {
+                // if (x && x.type) console.log(x && x.type);
                 if (x &&
                     x.type === 'VariableDeclarator' &&
                     x.id && x.id.name === key) {
@@ -590,6 +643,11 @@ const CodeFragment = (ast, sb) => {
                     x.id && x.id.type === 'Identifier' &&
                     x.id.name === key) {
                     return x
+                } else if (x &&
+                    x.type === 'FunctionDeclaration' &&
+                    x.id && x.id.type === 'Identifier' &&
+                    x.id.name === key) {
+                    return x
                 }
                 return acc
             }, null)
@@ -597,6 +655,7 @@ const CodeFragment = (ast, sb) => {
                 throw new Error('Function not found')
             }
             var newAst = _babel_core__WEBPACK_IMPORTED_MODULE_2__["types"].program([fn])
+
             return CodeFragment(newAst, sb)
         },
         provide: function (key, stub) {
@@ -623,7 +682,7 @@ const CodeFragment = (ast, sb) => {
                         this.update({
                             ...x, init: {
                                 "type": "Identifier",
-                                "name": `__maineffect__.${sb.namespace}.${getReplacementKey(key)}`
+                                "name": `getClosureValue("${getReplacementKey(key)}")`
                             }
                         })
                     } else if (x.id && x.id.type === 'ObjectPattern') {
@@ -650,12 +709,18 @@ const CodeFragment = (ast, sb) => {
                 return prev
             }, this)
         },
-        callWith: (...args) => {
-            return evaluateScript(null, ast, sb, ...args)
+        callWith (...args) {
+            return evaluateScript(null, ast, sb, false, ...args);
         },
-        apply: (thisParam, ...args) => {
-            return evaluateScript(thisParam, ast, sb, ...args)
-        }
+        apply (thisParam, ...args) {
+            return evaluateScript(thisParam, ast, sb, false, ...args);
+        },
+        getFn (...args) {
+            return evaluateScript(null, ast, sb, true, ...args);
+        },
+        getSandbox () {
+            return sb
+        },
     }
 }
 
@@ -664,31 +729,47 @@ const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
     // console.log(this, __filename, __dirname, '<<< Paths')
     // const fnAbsName = require.resolve(fileName)
     // console.log(fnAbsName, '<<<')
+    // console.log(options.sandbox, '<<< w abt this?')
     const sb = Sandbox(fnAbsName, options.sandbox) // Sandbox.reset(options.sandbox)    
     const { ast, code } = _babel_core__WEBPACK_IMPORTED_MODULE_2__["transformFileSync"](fnAbsName, { 
         sourceType: 'module', 
         ast: true, 
         code: true, 
-        plugins: [ImportRemover(options),] 
+        plugins: [ImportRemover(options), "istanbul"] 
     })
 
-    // console.log('HERER', code)
+    // console.log('HERER')
     // Let us grab the cov_ function
     const coverageFnName = getCoverageFnName(ast)
     // console.log(code)
     let testCode = `(function(exports, require, module, __filename, __dirname) {
-        ${sb.getCode()}
+        ${sb.getClosuresCode()}
         ${code}
-        return ${coverageFnName}
-    })({}, ()=>{}, {}, '', '')`
+        
+        return {covFnName: ${coverageFnName}, cov: __coverage__}
+    })({}, ()=>{}, {}, '', '');
+    `
 
-    // console.log(testCode)
+    fs__WEBPACK_IMPORTED_MODULE_5___default.a.writeFileSync(__dirname + '/tmp.js', testCode);
+        
     if (coverageFnName) {
-        const covFn = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInThisContext(testCode)
-        sb.set(`${coverageFnName}`, covFn)    
+        if (!sb.getClosureValue) {
+            console.log('WTF?????')
+        }
+
+        const contextObject = { ...global, getClosureValue: (key) => sb.getClosureValue(key)};
+        vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
+        const {covFnName, cov} = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject)
+    
+        // global.getClosureValue = sb.getClosureValue;
+        // const {covFnName, cov} = vm.runInThisContext(testCode);
+        // console.log(cov, '<<< Coverage')
+        global.__coverage__ = cov;
+        sb.set(`${coverageFnName}`, covFnName)    
     }
     // sb.set('covFnName', coverageFnName)
 
+    // console.log(sb.get('totalRisk'), '<<< Orign SB')
     return CodeFragment(ast, sb)
 }
 
@@ -702,6 +783,7 @@ const parse = parseFn
     require: parseFn
 });
 
+/* WEBPACK VAR INJECTION */}.call(this, "/"))
 
 /***/ })
 /******/ ])["default"];
