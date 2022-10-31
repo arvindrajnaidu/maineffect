@@ -4,7 +4,7 @@ import traverse from 'traverse'
 import * as babel from "@babel/core"
 import babelTraverse from "@babel/traverse";
 import path from 'path'
-import fs from 'fs'
+// import fs from 'fs'
 
 const Sandbox = (fileName, state) => {
     const closures = {
@@ -283,7 +283,7 @@ export const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
     })({}, ()=>{}, {}, '', '');
     `
 
-    fs.writeFileSync(__dirname + '/tmp.js', testCode);
+    // fs.writeFileSync(__dirname + '/tmp.js', testCode);
         
     if (coverageFnName) {
         if (!sb.getClosureValue) {

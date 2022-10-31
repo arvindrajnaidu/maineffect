@@ -91,7 +91,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -440,17 +440,11 @@ module.exports = require("path");
 
 /***/ }),
 /* 5 */
-/***/ (function(module, exports) {
-
-module.exports = require("fs");
-
-/***/ }),
-/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* WEBPACK VAR INJECTION */(function(__dirname) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseFn", function() { return parseFn; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseFn", function() { return parseFn; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "load", function() { return load; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parse", function() { return parse; });
 /* harmony import */ var vm__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
@@ -463,15 +457,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_traverse__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_traverse__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(4);
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(path__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(5);
-/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(fs__WEBPACK_IMPORTED_MODULE_5__);
 
 
 
 
 
 
-
+// import fs from 'fs'
 
 const Sandbox = (fileName, state) => {
     const closures = {
@@ -750,7 +742,7 @@ const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
     })({}, ()=>{}, {}, '', '');
     `
 
-    fs__WEBPACK_IMPORTED_MODULE_5___default.a.writeFileSync(__dirname + '/tmp.js', testCode);
+    // fs.writeFileSync(__dirname + '/tmp.js', testCode);
         
     if (coverageFnName) {
         if (!sb.getClosureValue) {
@@ -783,7 +775,6 @@ const parse = parseFn
     require: parseFn
 });
 
-/* WEBPACK VAR INJECTION */}.call(this, "/"))
 
 /***/ })
 /******/ ])["default"];
