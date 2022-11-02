@@ -1,9 +1,9 @@
-import { expect } from 'chai'
-import { parseFn } from '../maineffect'
-import React, { useState, useCallback, useMemo } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react';
-import Big from 'big.js';
-import sinon, { stub } from 'sinon'
+import { expect } from "chai";
+import { parseFn } from "../maineffect";
+import React, { useState, useCallback, useMemo } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import Big from "big.js";
+import sinon, { stub } from "sinon";
 // import { copyText } from 'src/app/internationalization';
 // import { render, screen, within } from 'test';
 
@@ -28,8 +28,7 @@ import sinon, { stub } from 'sinon'
 //   },
 // } = copyText;
 
-describe('MarketTotalRisk', () => {
-  
+describe("MarketTotalRisk", () => {
   // beforeEach(() => {
   //   (useMarketRiskData as jest.Mock).mockReturnValue({
   //     data: {
@@ -41,67 +40,58 @@ describe('MarketTotalRisk', () => {
   //   });
   // });
 
-  describe('Defaults', () => {
+  describe("Defaults", () => {
     const DataGrid = sinon.stub();
     // console.log('PARSING >>>>')
-    const parsed = parseFn(require.resolve('./MarketTotalRisk.tsx'), {
-      sandbox: {
-        React,
-        useState,
-        useCallback,
-        DataGrid,
-        formatValueOrCurrency: () => {}, 
-        getSortFieldFromMap: () => {}, 
-        RISK_DATA_MAP: {},
-        useMemo,
-        symbol: 'AAPL',
-        nSRBuy: () => {},
-        nSRSell: () => {},
-        nSRNet: () => {},
-        uFBuy: () => {},
-        uFSell: () => {},
-        uFNet: () => {},
-        frackerInventory: {}, 
-        frackerPL: {}, 
-        overnightErrorAccount: {},
-        currencyRenderer: () => <div></div>,
-        exposure: {},
-        totalRisk: 'FOO',
-      },
-      destroy: []
+    const parsed = parseFn(require.resolve("./MarketTotalRisk.tsx"), {
+      React,
+      useState,
+      useCallback,
+      DataGrid,
+      formatValueOrCurrency: () => {},
+      getSortFieldFromMap: () => {},
+      RISK_DATA_MAP: {},
+      useMemo,
+      symbol: "AAPL",
+      nSRBuy: () => {},
+      nSRSell: () => {},
+      nSRNet: () => {},
+      uFBuy: () => {},
+      uFSell: () => {},
+      uFNet: () => {},
+      frackerInventory: {},
+      frackerPL: {},
+      overnightErrorAccount: {},
+      currencyRenderer: () => <div></div>,
+      exposure: {},
+      totalRisk: "FOO",
     });
     // console.log('PARSED')
     // console.log(parsed.find('MarketTotalRisk').source(), '<<<<<<')
     beforeEach(() => {
       parsed
         // .fold('copyText', {})
-        .provide('useCompleteRiskTableData', () => {
+        .provide("useCompleteRiskTableData", () => {
           return {
-            mutate () {
-
-            }
-          }
+            mutate() {},
+          };
         })
-        .provide('useServerSideDataGrid', () => {
+        .provide("useServerSideDataGrid", () => {
           return {
-            pagination: {
-
-            }
-          }
+            pagination: {},
+          };
         })
-        .provide('useMarketRiskData', () => {
-          return {
+        .provide("useMarketRiskData", () => {
+          return {};
+        });
 
-          }
-        })
-      
-      const MarketTotalRisk = parsed.find('MarketTotalRisk').getFn();
+      const MarketTotalRisk = parsed.find("MarketTotalRisk").getFn();
       render(<MarketTotalRisk riskDataType="Notional" currentSymbol={null} />);
     });
 
-    it('should render correctly', () => {
-      expect(DataGrid.calledOnce).to.be.true
-      expect(DataGrid.firstCall.args[0].title).to.equal('FOO')
+    it("should render correctly", () => {
+      expect(DataGrid.calledOnce).to.be.true;
+      expect(DataGrid.firstCall.args[0].title).to.equal("FOO");
     });
 
     // it('should display all the columns', () => {

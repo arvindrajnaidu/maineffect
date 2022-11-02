@@ -5,11 +5,7 @@ import React from 'react'
 import sinon, { stub } from 'sinon'
 
 describe('Greeeting', () => {
-    const parsed = load(require.resolve('./Greeting.js'), {
-        sandbox: {
-            React
-        }
-    })
+    const parsed = load(require.resolve('./Greeting.js'), { React });
 
     describe('constructor()', () => {
         it('should setup the right state', () => {

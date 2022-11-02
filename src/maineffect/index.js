@@ -55,7 +55,7 @@ const getCoverageFnName = (node) => {
     return firstIdentifier && firstIdentifier.name
 }
 
-const ImportRemover = (options) => () => {
+const ImportRemover = () => () => {
     return {
       visitor: {
         ImportDeclaration(path, state) {
@@ -192,6 +192,12 @@ const CodeFragment = (ast, sb) => {
             return CodeFragment(newAst, sb)
         },
         provide: function (key, stub) {
+            if (typeof key === 'object') {
+                Object.keys(key).forEach((k) => {
+                    sb.set(k, key[k]);
+                })
+                return this;
+            }
             sb.set(key, stub)
             return this
         },
@@ -257,18 +263,18 @@ const CodeFragment = (ast, sb) => {
     }
 }
 
-export const parseFn = (fnAbsName, options = {sandbox: {}, destroy: []}) => {
+export const parseFn = (fnAbsName, sandbox = {}) => {
     // Let us do what require does
     // console.log(this, __filename, __dirname, '<<< Paths')
     // const fnAbsName = require.resolve(fileName)
     // console.log(fnAbsName, '<<<')
     // console.log(options.sandbox, '<<< w abt this?')
-    const sb = Sandbox(fnAbsName, options.sandbox) // Sandbox.reset(options.sandbox)    
+    const sb = Sandbox(fnAbsName, sandbox) // Sandbox.reset(options.sandbox)    
     const { ast, code } = babel.transformFileSync(fnAbsName, { 
         sourceType: 'module', 
         ast: true, 
         code: true, 
-        plugins: [ImportRemover(options), "istanbul"] 
+        plugins: [ImportRemover(), "istanbul"] 
     })
 
     // console.log('HERER')
