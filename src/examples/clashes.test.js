@@ -10,7 +10,6 @@ describe.only('clashes', () => {
                             .find('getPayment')
                             .provide('taxRate', 0.15)
                             .callWith(100)
-                            .result
             expect(result).to.equal(15)
         })
     })

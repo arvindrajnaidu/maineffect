@@ -11,10 +11,7 @@ describe('basic', () => {
         it('should return the sum of two numbers', () => {
             const result = parsed
                             .find('sum')
-                            // .source()
                             .callWith(51, 82)
-                            .result
-            // console.log(result)
             expect(result).to.equal(133)
         })
     })
@@ -23,16 +20,12 @@ describe('basic', () => {
             const result = await parsed
                                     .find('sumAsync')
                                     .callWith(51, 82)
-                                    .result
             expect(result).to.equal(133)
         })
     })
     describe('pitcher()', () => {
         it('should throw an error with the argument as message', () => {
-            const result = parsed.find('pitcher')
-                                    .callWith('foo')
-                                    .exception
-            expect(result.message).to.equal('foo')
+            expect(() => parsed.find('pitcher').callWith('foo')).throws('foo')
         })
     })
     describe('pitcherAsync()', () => {
@@ -52,7 +45,6 @@ describe('basic', () => {
             const result = parsed
                     .find('copyUserObject')
                     .callWith({name: 'blah', age: 950}, 'amazon')
-                    .result
             expect(result).to.deep.equal({name: 'amazon', age: 950})
         })
     })

@@ -8,7 +8,7 @@ describe('This', () => {
         it('should return value of a', () => {
             const result = parsed
                                 .find('getA')
-                                .apply({a: 1}).result
+                                .apply({a: 1})
             expect(result).to.equal(1)
         });
     });

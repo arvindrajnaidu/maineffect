@@ -6,7 +6,7 @@ describe('Side Effects', () => {
     
     describe('generateFoo()', () => {
         it('should return a word', () => {
-            const result = parsed.find('generateFoo').callWith().result
+            const result = parsed.find('generateFoo').callWith()
             expect(result).to.equal('foo')
         });
     });
@@ -16,7 +16,6 @@ describe('Side Effects', () => {
                                     .find('generateFooService')
                                     .provide('request', () => 'foo')
                                     .callWith()
-                                    .result
             expect(result).to.equal('foo')
         });
     });

@@ -85,18 +85,19 @@ const getIsolatedFn = (init) => {
 const getEvaluatedResultCode = ({closureCode, code}) => `
 (function () {
     ${closureCode}
-    try {
+    // try {
         ${code}
+
         const result = __maineffect_evaluated__.apply(__maineffect_this__, __maineffect_args__)
-        return {
-            result,
-            //__coverage__,
-        }
-    } catch (e) {
-        return {
-            exception: e
-        }
-    }
+        return result;
+        // return {
+        //     result,
+        // }
+    // } catch (e) {
+    //     return {
+    //         exception: e
+    //     }
+    // }
 })();
 `
 const getEvaluatedCode = ({closureCode, code}) => `
