@@ -1,8 +1,8 @@
 import { expect } from 'chai'
-import { parseFn } from '../maineffect'
+import { parseFn } from '../../maineffect'
+// import basic from './basic'
 
-describe('basic', () => {
-    // console.log(require.resolve('../src/examples/basic'))
+describe('basic', () => {    
     const parsed = parseFn(require.resolve('./basic'))
 
     // console.log(parsed.source())
@@ -31,10 +31,9 @@ describe('basic', () => {
     describe('pitcherAsync()', () => {
         it('should throw an error with the argument as message', async () => {
             try {
-                const result = await parsed
+                await parsed
                         .find('pitcherAsync')
                         .callWith('foo')
-                        .result
             } catch (e) {
                 expect(e.message).to.equal('foo')
             }
