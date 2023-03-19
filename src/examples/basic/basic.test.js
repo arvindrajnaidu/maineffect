@@ -47,4 +47,12 @@ describe('basic', () => {
             expect(result).to.deep.equal({name: 'amazon', age: 950})
         })
     })
+    describe('simpleFunction()', () => {
+        it('should handle function declarations', () => {
+            const result = parsed
+                    .find('simpleFunction')
+                    .callWith()
+            expect(result).to.equal(true);
+        })
+    })
 })

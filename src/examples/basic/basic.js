@@ -25,3 +25,7 @@ export const copyUserObject = (user, newName) => {
   newUser.name = newName
   return newUser
 }
+
+function simpleFunction () {
+    return true
+}
