@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { parseFn } from '../maineffect'
 
-describe.only('clashes', () => {
+describe('clashes', () => {
     const parsed = parseFn(require.resolve('./clashes'))
 
     describe('getPayment()', () => {

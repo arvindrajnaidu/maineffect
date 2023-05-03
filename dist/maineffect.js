@@ -461,12 +461,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-// import types from '@babel/types';
 
 
-// import istanbul from 'babel-plugin-istanbul'
-// import presetEnv from '@babel/preset-env'
-// import spread from "@babel/plugin-transform-spread"
 
 const Sandbox = (fileName, state) => {
   const closures = {
@@ -501,6 +497,9 @@ const Sandbox = (fileName, state) => {
     getClosureValue(key) {
       return closures[key];
     },
+    getFileName() {
+      return fileName;
+    }
   };
 };
 
@@ -572,9 +571,14 @@ const getEvaluatedCode = ({ closureCode, code }) => `
 `;
 
 const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
+  // console.log(sb.getFileName(), 'SB filename');
   const { code } = Object(_babel_core__WEBPACK_IMPORTED_MODULE_2__["transformFromAstSync"])(ast, null, {
+    // filename: sb.getFileName(),
+    // filename: 'calculator.js',
     filename: "fake",
   });
+
+  // console.log(code)
 
   sb.set("__maineffect_args__", args);
   sb.set("__maineffect_this__", thisParam);
@@ -601,6 +605,7 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
   var testResult;
 
   // console.log(testCode)
+  // console.log(JSON.stringify(global.__coverage__, null, 2), '<<< BEFORE RUN')
   if (process.env.IS_WEB) {
     global.getClosureValue = getClosureValue;
     testResult = eval(testCode);
@@ -608,9 +613,20 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
   } else {
     const contextObject = { ...global, getClosureValue };
     vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
+    // console.log(testCode, '<< testCode')
     testResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject);
+
+    // console.log(JSON.stringify(contextObject.__coverage__, null, 2), '<< alt lats')
+    // global.getClosureValue = getClosureValue;
+    // testResult = vm.runInThisContext(testCode);
+    // delete global.getClosureValue;
+    // console.log(testResult.cov, '<<< Cov result')
+    // console.log(JSON.stringify(contextObject.__coverage__, null, 2), '<< MISSING COV')
   }
 
+  
+
+  // console.log(JSON.stringify(global.__coverage__, null, 2), '<<< AFTER RUN')
   // global.__coverage__ = {...global.__coverage__, ...testResult.__coverage__}
   // console.log(testResult.__coverage__)
   // const testResult = vm.runInThisContext(testCode)
@@ -620,52 +636,106 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
 const CodeFragment = (ast, sb) => {
   return {
     find: (key) => {
-      const fn = traverse__WEBPACK_IMPORTED_MODULE_1___default()(ast).reduce(function (acc, x) {
-        // if (x && x.type) console.log(x && x.type);
-        if (x && x.type === "VariableDeclarator" && x.id && x.id.name === key) {
-          return getIsolatedFn(x.init);
-        } else if (x && x.type === "Property" && x.key && x.key.name === key) {
-          return getIsolatedFn(x.value);
-        } else if (
-          x &&
-          x.type === "ObjectProperty" &&
-          x.key &&
-          x.key.name === key
-        ) {
-          return getIsolatedFn(x.value);
-        } else if (
-          x &&
-          x.type === "MethodDefinition" &&
-          x.key &&
-          x.key.name === key
-        ) {
-          return getIsolatedFn(x.value);
-        } else if (
-          x &&
-          x.type === "ClassMethod" &&
-          x.key &&
-          x.key.name === key
-        ) {
-          return getIsolatedFn({ ...x, type: "FunctionExpression" });
-        } else if (
-          x &&
-          x.type === "ClassDeclaration" &&
-          x.id &&
-          x.id.type === "Identifier" &&
-          x.id.name === key
-        ) {
-          return x;
-        } else if (
-          x &&
-          x.type === "FunctionDeclaration" &&
-          x.id &&
-          x.id.type === "Identifier" &&
-          x.id.name === key
-        ) {
-          return getIsolatedFn(x);
+      let fn;
+      _babel_traverse__WEBPACK_IMPORTED_MODULE_3___default()(ast, {
+        enter(path) {
+          if (fn) {
+            path.stop();
+          }
+        },
+        VariableDeclarator: function (path) {
+          if (path.node.id.name === key) {
+            fn = path.node.init;
+            path.stop();
+          }
+        },
+        FunctionDeclaration: function (path) {
+          if (path.node.id.name === key) {
+            fn = path.node;
+            path.stop();
+          }
+        },
+        ObjectProperty : function (path) {
+          if (path.node.key.name === key) {
+            fn = path.node.value;
+            path.stop();
+          }
+        },
+        ClassDeclaration : function (path) {
+          if (path.node.id.name === key) {
+            fn = path.node.body;
+            path.stop();
+          }
+        },
+        Method : function (path) {          
+          if (path.node.key.name === key) {
+            fn = {
+              "type": "FunctionExpression",
+              "params": path.node.params,
+              "body": path.node.body
+            }
+            path.stop();
+          }
         }
-        return acc;
-      }, null);
+        // Property: function (path) {
+        //   // console.log(path.key)
+        // }
+      });
+      fn = fn && getIsolatedFn(fn);
+      // console.log(fn)
+      // const fn = traverse(ast).reduce(function (acc, x) {
+      //   // if (x && x.type) console.log(x && x.type);
+      //   // if (acc && acc.isIsolated) return acc;
+      //   if (x && x.type === "VariableDeclarator" && x.id && x.id.name === key) {
+      //     return getIsolatedFn(x.init);
+      //   } else if (x && x.type === "Property" && x.key && x.key.name === key) {
+      //     return getIsolatedFn(x.value);
+      //   } else if (
+      //     x &&
+      //     x.type === "ObjectProperty" &&
+      //     x.key &&
+      //     x.key.name === key
+      //   ) {
+      //     return getIsolatedFn(x.value);
+      //   } else if (
+      //     x &&
+      //     x.type === "MethodDefinition" &&
+      //     x.key &&
+      //     x.key.name === key
+      //   ) {
+      //     return getIsolatedFn(x.value);
+      //   } else if (
+      //     x &&
+      //     x.type === "ClassMethod" &&
+      //     x.key &&
+      //     x.key.name === key
+      //   ) {
+      //     return getIsolatedFn({ ...x, type: "FunctionExpression" });
+      //   } else if (
+      //     x &&
+      //     x.type === "ClassDeclaration" &&
+      //     x.id &&
+      //     x.id.type === "Identifier" &&
+      //     x.id.name === key
+      //   ) {
+      //     return x;
+      //   } else if (
+      //     x &&
+      //     x.type === "FunctionDeclaration" &&
+      //     x.id &&
+      //     x.id.type === "Identifier" &&
+      //     x.id.name === key
+      //   ) {
+      //     return getIsolatedFn(x);
+      //   } else if (
+      //     x &&
+      //     x.type === "FunctionExpression"
+      //   ) {
+      //     return getIsolatedFn(x);
+      //   }
+      //   return acc;
+      // }, null);
+
       if (!fn) {
         throw new Error("Function not found");
       }
@@ -684,12 +754,14 @@ const CodeFragment = (ast, sb) => {
     },
     source: () => {
       return Object(_babel_core__WEBPACK_IMPORTED_MODULE_2__["transformFromAstSync"])(ast, null, {
-        filename: "fake",
+        filename: sb.getFileName(),
+        // filename: "fake",
       }).code;
     },
     print: function (logger = console.log) {
       const scriptSrc = Object(_babel_core__WEBPACK_IMPORTED_MODULE_2__["transformFromAstSync"])(ast, null, {
-        filename: "fake",
+        filename: sb.getFileName(),
+        // filename: "fake",
       }).code;
       logger(scriptSrc);
       return this;
@@ -786,6 +858,7 @@ const CodeFragment = (ast, sb) => {
   };
 };
 
+
 const getCodeFragment = ({ ast, code, sb }) => {
   // Let us grab the cov_ function
   const coverageFnName = getCoverageFnName(ast);
@@ -813,7 +886,6 @@ const getCodeFragment = ({ ast, code, sb }) => {
         console.log(e, '<< error')
         throw e
       }
-      
       delete global.getClosureValue;
     } else {
       const contextObject = {
@@ -822,9 +894,20 @@ const getCodeFragment = ({ ast, code, sb }) => {
       };
       vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
       initialRunResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject);
+
+      // global.getClosureValue = sb.getClosureValue;
+      // try {
+      //   initialRunResult = vm.runInThisContext(testCode);
+      //   // console.log('Runs fine!!')
+      // } catch(e) {
+      //   console.log(e, '<< error')
+      //   throw e
+      // }
+      // delete global.getClosureValue;
     }
     const { covFnName, cov } = initialRunResult;
 
+    // console.log(cov, '<< Coverage')
     // const contextObject = {
     //   // ...global,
     //   getClosureValue: (key) => sb.getClosureValue(key),
@@ -832,7 +915,9 @@ const getCodeFragment = ({ ast, code, sb }) => {
     // vm.createContext(contextObject);
     // const { covFnName, cov } = vm.runInContext(testCode, contextObject);
     global.__coverage__ = cov;
+    // global.__coverage__ = global.__coverage__ ? {...global.__coverage__, ...cov} : cov;
     sb.set(`${coverageFnName}`, covFnName);
+
   } else {
     // console.log("SKIP coverage");
   }

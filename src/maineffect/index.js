@@ -6,12 +6,8 @@ import {
   transformFileSync,
   types,
 } from "@babel/core";
-// import types from '@babel/types';
 import babelTraverse from "@babel/traverse";
 import path from "path";
-// import istanbul from 'babel-plugin-istanbul'
-// import presetEnv from '@babel/preset-env'
-// import spread from "@babel/plugin-transform-spread"
 
 const Sandbox = (fileName, state) => {
   const closures = {
@@ -26,12 +22,10 @@ const Sandbox = (fileName, state) => {
 
   return {
     namespace,
-    // get: (key) => fileSB[key],
+    stubs: {},
     set: (key, val) => {
-      // fileSB[key] = val;
       closures[key] = val;
     },
-    // reset: (val) => fileSB = val,
     getClosuresCode() {
       return Object.keys(closures).reduce((acc, curr) => {
         return `
@@ -45,6 +39,9 @@ const Sandbox = (fileName, state) => {
     },
     getClosureValue(key) {
       return closures[key];
+    },
+    getFileName() {
+      return fileName;
     },
   };
 };
@@ -117,14 +114,19 @@ const getEvaluatedCode = ({ closureCode, code }) => `
 `;
 
 const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
+  // console.log(sb.getFileName(), 'SB filename');
   const { code } = transformFromAstSync(ast, null, {
+    // filename: sb.getFileName(),
+    // filename: 'calculator.js',
     filename: "fake",
   });
+
+  // console.log(code)
 
   sb.set("__maineffect_args__", args);
   sb.set("__maineffect_this__", thisParam);
   const closureCode = sb.getClosuresCode();
-  const closures = sb.getClosures();
+  // const closures = sb.getClosures();
   // const getClosureValue = (key) => {
   //   return closures[key];
   // };
@@ -146,6 +148,7 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
   var testResult;
 
   // console.log(testCode)
+  // console.log(JSON.stringify(global.__coverage__, null, 2), '<<< BEFORE RUN')
   if (process.env.IS_WEB) {
     global.getClosureValue = getClosureValue;
     testResult = eval(testCode);
@@ -153,9 +156,18 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
   } else {
     const contextObject = { ...global, getClosureValue };
     vm.createContext(contextObject);
+    // console.log(testCode, '<< testCode')
     testResult = vm.runInContext(testCode, contextObject);
+
+    // console.log(JSON.stringify(contextObject.__coverage__, null, 2), '<< alt lats')
+    // global.getClosureValue = getClosureValue;
+    // testResult = vm.runInThisContext(testCode);
+    // delete global.getClosureValue;
+    // console.log(testResult.cov, '<<< Cov result')
+    // console.log(JSON.stringify(contextObject.__coverage__, null, 2), '<< MISSING COV')
   }
 
+  // console.log(JSON.stringify(global.__coverage__, null, 2), '<<< AFTER RUN')
   // global.__coverage__ = {...global.__coverage__, ...testResult.__coverage__}
   // console.log(testResult.__coverage__)
   // const testResult = vm.runInThisContext(testCode)
@@ -165,52 +177,106 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
 const CodeFragment = (ast, sb) => {
   return {
     find: (key) => {
-      const fn = traverse(ast).reduce(function (acc, x) {
-        // if (x && x.type) console.log(x && x.type);
-        if (x && x.type === "VariableDeclarator" && x.id && x.id.name === key) {
-          return getIsolatedFn(x.init);
-        } else if (x && x.type === "Property" && x.key && x.key.name === key) {
-          return getIsolatedFn(x.value);
-        } else if (
-          x &&
-          x.type === "ObjectProperty" &&
-          x.key &&
-          x.key.name === key
-        ) {
-          return getIsolatedFn(x.value);
-        } else if (
-          x &&
-          x.type === "MethodDefinition" &&
-          x.key &&
-          x.key.name === key
-        ) {
-          return getIsolatedFn(x.value);
-        } else if (
-          x &&
-          x.type === "ClassMethod" &&
-          x.key &&
-          x.key.name === key
-        ) {
-          return getIsolatedFn({ ...x, type: "FunctionExpression" });
-        } else if (
-          x &&
-          x.type === "ClassDeclaration" &&
-          x.id &&
-          x.id.type === "Identifier" &&
-          x.id.name === key
-        ) {
-          return x;
-        } else if (
-          x &&
-          x.type === "FunctionDeclaration" &&
-          x.id &&
-          x.id.type === "Identifier" &&
-          x.id.name === key
-        ) {
-          return getIsolatedFn(x);
-        }
-        return acc;
-      }, null);
+      let fn;
+      babelTraverse(ast, {
+        enter(path) {
+          if (fn) {
+            path.stop();
+          }
+        },
+        VariableDeclarator: function (path) {
+          if (path.node.id.name === key) {
+            fn = path.node.init;
+            path.stop();
+          }
+        },
+        FunctionDeclaration: function (path) {
+          if (path.node.id.name === key) {
+            fn = path.node;
+            path.stop();
+          }
+        },
+        ObjectProperty: function (path) {
+          if (path.node.key.name === key) {
+            fn = path.node.value;
+            path.stop();
+          }
+        },
+        ClassDeclaration: function (path) {
+          if (path.node.id.name === key) {
+            fn = path.node.body;
+            path.stop();
+          }
+        },
+        Method: function (path) {
+          if (path.node.key.name === key) {
+            fn = {
+              type: "FunctionExpression",
+              params: path.node.params,
+              body: path.node.body,
+            };
+            path.stop();
+          }
+        },
+        // Property: function (path) {
+        //   // console.log(path.key)
+        // }
+      });
+      fn = fn && getIsolatedFn(fn);
+      // console.log(fn)
+      // const fn = traverse(ast).reduce(function (acc, x) {
+      //   // if (x && x.type) console.log(x && x.type);
+      //   // if (acc && acc.isIsolated) return acc;
+      //   if (x && x.type === "VariableDeclarator" && x.id && x.id.name === key) {
+      //     return getIsolatedFn(x.init);
+      //   } else if (x && x.type === "Property" && x.key && x.key.name === key) {
+      //     return getIsolatedFn(x.value);
+      //   } else if (
+      //     x &&
+      //     x.type === "ObjectProperty" &&
+      //     x.key &&
+      //     x.key.name === key
+      //   ) {
+      //     return getIsolatedFn(x.value);
+      //   } else if (
+      //     x &&
+      //     x.type === "MethodDefinition" &&
+      //     x.key &&
+      //     x.key.name === key
+      //   ) {
+      //     return getIsolatedFn(x.value);
+      //   } else if (
+      //     x &&
+      //     x.type === "ClassMethod" &&
+      //     x.key &&
+      //     x.key.name === key
+      //   ) {
+      //     return getIsolatedFn({ ...x, type: "FunctionExpression" });
+      //   } else if (
+      //     x &&
+      //     x.type === "ClassDeclaration" &&
+      //     x.id &&
+      //     x.id.type === "Identifier" &&
+      //     x.id.name === key
+      //   ) {
+      //     return x;
+      //   } else if (
+      //     x &&
+      //     x.type === "FunctionDeclaration" &&
+      //     x.id &&
+      //     x.id.type === "Identifier" &&
+      //     x.id.name === key
+      //   ) {
+      //     return getIsolatedFn(x);
+      //   } else if (
+      //     x &&
+      //     x.type === "FunctionExpression"
+      //   ) {
+      //     return getIsolatedFn(x);
+      //   }
+      //   return acc;
+      // }, null);
+
       if (!fn) {
         throw new Error("Function not found");
       }
@@ -222,19 +288,21 @@ const CodeFragment = (ast, sb) => {
         Object.keys(key).forEach((k) => {
           sb.set(k, key[k]);
         });
-        return this;
+        return CodeFragment(ast, sb);
       }
       sb.set(key, stub);
       return CodeFragment(ast, sb);
     },
     source: () => {
       return transformFromAstSync(ast, null, {
-        filename: "fake",
+        filename: sb.getFileName(),
+        // filename: "fake",
       }).code;
     },
     print: function (logger = console.log) {
       const scriptSrc = transformFromAstSync(ast, null, {
-        filename: "fake",
+        filename: sb.getFileName(),
+        // filename: "fake",
       }).code;
       logger(scriptSrc);
       return this;
@@ -296,34 +364,61 @@ const CodeFragment = (ast, sb) => {
     getSandbox() {
       return sb;
     },
-    stubFnCalls: function () {
-      const fn = traverse(ast).reduce(function (acc, x) {
-        if (x && x.type === "CallExpression") {
-          let stubNames = [];
-          traverse(x).forEach(function (x) {
-            if (x && x.type === "Identifier") {
-              stubNames.push(x.name);
+    stub: function (key, stubCreator) {
+      const arr = key.split(".");
+      let provision = {};
+      let prev = provision;
+      arr.forEach((item) => {
+        if (item.endsWith("()")) {
+          // Current item is a stub
+          let fnName = item.replace("()", "");
+          // console.log(typeof prev, fnName, '<<< fnName')
+          let tempStub = stubCreator(fnName);
+          if (typeof prev === "object") {
+            // Prev was an object
+            prev[fnName] = tempStub;            
+          } else {
+            // Prev was also a stub
+            if (prev.returns) {
+              // Sinon
+              prev.returns({[fnName]: tempStub})
+            } else if (prev.mockReturnValue) {
+              // Jest
+              prev.mockReturnValue({[fnName]: tempStub});
+            } else {
+              throw new Error('Uknown stub. Neither Sinon nor Jest');
             }
-          });
-          let stubName = stubNames.join(".");
-          // const stub = stubCreator(stubName)
-          // sb.set(key, stub);
-          return this;
+          }
+          prev = tempStub;
+        } else {
+          // console.log(typeof prev, item, '<<< item')
+          // Current item is an object
+          let tempObj = {};
+          if (typeof prev === "object") {
+            // Prev was an object
+            prev[item] = tempObj;
+          } else {  
+            // Prev was a stub
+            if (prev.returns) {
+              // Sinon
+              prev.returns(tempObj)
+            } else if (prev.mockImplementation) {
+              // Jest
+              prev.mockReturnValue({[item]: tempObj});
+              // prev.mockImplementation(() => {
+              //   return () => tempObj
+              // });
+            } else {
+              throw new Error('Uknown stub. Neither Sinon nor Jest');
+            }
+          }
+          prev = tempObj;
         }
-        return acc;
-      }, null);
+      });
+      // console.log(provision);
+      this.provide(provision);
 
-      // if (typeof key === "object") {
-      //   Object.keys(key).forEach((k) => {
-      //     sb.set(k, key[k]);
-      //   });
-      //   return this;
-      // }
-      // sb.set(key, stub);
-      // return this;
-
-      return this;
-      // return CodeFragment(newAst, sb);
+      return CodeFragment(ast, sb);
     },
     getAST() {
       return ast;
@@ -354,11 +449,10 @@ const getCodeFragment = ({ ast, code, sb }) => {
       try {
         initialRunResult = eval(testCode);
         // console.log('Runs fine!!')
-      } catch(e) {
-        console.log(e, '<< error')
-        throw e
+      } catch (e) {
+        console.log(e, "<< error");
+        throw e;
       }
-      
       delete global.getClosureValue;
     } else {
       const contextObject = {
@@ -367,9 +461,20 @@ const getCodeFragment = ({ ast, code, sb }) => {
       };
       vm.createContext(contextObject);
       initialRunResult = vm.runInContext(testCode, contextObject);
+
+      // global.getClosureValue = sb.getClosureValue;
+      // try {
+      //   initialRunResult = vm.runInThisContext(testCode);
+      //   // console.log('Runs fine!!')
+      // } catch(e) {
+      //   console.log(e, '<< error')
+      //   throw e
+      // }
+      // delete global.getClosureValue;
     }
     const { covFnName, cov } = initialRunResult;
 
+    // console.log(cov, '<< Coverage')
     // const contextObject = {
     //   // ...global,
     //   getClosureValue: (key) => sb.getClosureValue(key),
@@ -377,9 +482,8 @@ const getCodeFragment = ({ ast, code, sb }) => {
     // vm.createContext(contextObject);
     // const { covFnName, cov } = vm.runInContext(testCode, contextObject);
     global.__coverage__ = cov;
+    // global.__coverage__ = global.__coverage__ ? {...global.__coverage__, ...cov} : cov;
     sb.set(`${coverageFnName}`, covFnName);
-  } else {
-    // console.log("SKIP coverage");
   }
   return CodeFragment(ast, sb);
 };
@@ -416,6 +520,19 @@ export const parseFnStr = (
 
 export const load = parseFn;
 export const parse = parseFn;
+
+export const Stubs = (stubImplementation) => {
+  const stubs = {};
+  return {
+      createStub(stubName){
+          stubs[stubName] = stubImplementation();
+          return stubs[stubName];
+      },
+      getStubs() {
+          return stubs;
+      }
+  }
+}
 
 export default {
   parseFn,

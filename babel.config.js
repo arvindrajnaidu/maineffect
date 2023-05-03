@@ -13,7 +13,7 @@ const presets = [
 
 const plugins = [
   "@babel/plugin-transform-spread", 
-  // "istanbul"
+  "istanbul"
 ]
 
 module.exports = { presets, plugins };
