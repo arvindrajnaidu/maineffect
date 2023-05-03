@@ -7,7 +7,7 @@
 		exports["maineffect"] = factory(require("@babel/core"), require("@babel/traverse"));
 	else
 		root["maineffect"] = factory(root["@babel/core"], root["@babel/traverse"]);
-})(global, function(__WEBPACK_EXTERNAL_MODULE__0__, __WEBPACK_EXTERNAL_MODULE__3__) {
+})(global, function(__WEBPACK_EXTERNAL_MODULE__0__, __WEBPACK_EXTERNAL_MODULE__2__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -108,6 +108,12 @@ module.exports = require("vm");
 
 /***/ }),
 /* 2 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE__2__;
+
+/***/ }),
+/* 3 */
 /***/ (function(module, exports) {
 
 var traverse = module.exports = function (obj) {
@@ -427,12 +433,6 @@ var hasOwnProperty = Object.hasOwnProperty || function (obj, key) {
 
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE__3__;
-
-/***/ }),
 /* 4 */
 /***/ (function(module, exports) {
 
@@ -448,13 +448,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseFnStr", function() { return parseFnStr; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "load", function() { return load; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parse", function() { return parse; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Stubs", function() { return Stubs; });
 /* harmony import */ var vm__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 /* harmony import */ var vm__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(vm__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var traverse__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
+/* harmony import */ var traverse__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
 /* harmony import */ var traverse__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(traverse__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _babel_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(0);
 /* harmony import */ var _babel_core__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_core__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _babel_traverse__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3);
+/* harmony import */ var _babel_traverse__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(2);
 /* harmony import */ var _babel_traverse__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_traverse__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(4);
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(path__WEBPACK_IMPORTED_MODULE_4__);
@@ -477,12 +478,10 @@ const Sandbox = (fileName, state) => {
 
   return {
     namespace,
-    // get: (key) => fileSB[key],
+    stubs: {},
     set: (key, val) => {
-      // fileSB[key] = val;
       closures[key] = val;
     },
-    // reset: (val) => fileSB = val,
     getClosuresCode() {
       return Object.keys(closures).reduce((acc, curr) => {
         return `
@@ -499,7 +498,7 @@ const Sandbox = (fileName, state) => {
     },
     getFileName() {
       return fileName;
-    }
+    },
   };
 };
 
@@ -583,7 +582,7 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
   sb.set("__maineffect_args__", args);
   sb.set("__maineffect_this__", thisParam);
   const closureCode = sb.getClosuresCode();
-  const closures = sb.getClosures();
+  // const closures = sb.getClosures();
   // const getClosureValue = (key) => {
   //   return closures[key];
   // };
@@ -624,8 +623,6 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
     // console.log(JSON.stringify(contextObject.__coverage__, null, 2), '<< MISSING COV')
   }
 
-  
-
   // console.log(JSON.stringify(global.__coverage__, null, 2), '<<< AFTER RUN')
   // global.__coverage__ = {...global.__coverage__, ...testResult.__coverage__}
   // console.log(testResult.__coverage__)
@@ -655,28 +652,28 @@ const CodeFragment = (ast, sb) => {
             path.stop();
           }
         },
-        ObjectProperty : function (path) {
+        ObjectProperty: function (path) {
           if (path.node.key.name === key) {
             fn = path.node.value;
             path.stop();
           }
         },
-        ClassDeclaration : function (path) {
+        ClassDeclaration: function (path) {
           if (path.node.id.name === key) {
             fn = path.node.body;
             path.stop();
           }
         },
-        Method : function (path) {          
+        Method: function (path) {
           if (path.node.key.name === key) {
             fn = {
-              "type": "FunctionExpression",
-              "params": path.node.params,
-              "body": path.node.body
-            }
+              type: "FunctionExpression",
+              params: path.node.params,
+              body: path.node.body,
+            };
             path.stop();
           }
-        }
+        },
         // Property: function (path) {
         //   // console.log(path.key)
         // }
@@ -747,7 +744,7 @@ const CodeFragment = (ast, sb) => {
         Object.keys(key).forEach((k) => {
           sb.set(k, key[k]);
         });
-        return this;
+        return CodeFragment(ast, sb);
       }
       sb.set(key, stub);
       return CodeFragment(ast, sb);
@@ -823,41 +820,67 @@ const CodeFragment = (ast, sb) => {
     getSandbox() {
       return sb;
     },
-    stubFnCalls: function () {
-      const fn = traverse__WEBPACK_IMPORTED_MODULE_1___default()(ast).reduce(function (acc, x) {
-        if (x && x.type === "CallExpression") {
-          let stubNames = [];
-          traverse__WEBPACK_IMPORTED_MODULE_1___default()(x).forEach(function (x) {
-            if (x && x.type === "Identifier") {
-              stubNames.push(x.name);
+    stub: function (key, stubCreator) {
+      const arr = key.split(".");
+      let provision = {};
+      let prev = provision;
+      arr.forEach((item) => {
+        if (item.endsWith("()")) {
+          // Current item is a stub
+          let fnName = item.replace("()", "");
+          // console.log(typeof prev, fnName, '<<< fnName')
+          let tempStub = stubCreator(fnName);
+          if (typeof prev === "object") {
+            // Prev was an object
+            prev[fnName] = tempStub;            
+          } else {
+            // Prev was also a stub
+            if (prev.returns) {
+              // Sinon
+              prev.returns({[fnName]: tempStub})
+            } else if (prev.mockReturnValue) {
+              // Jest
+              prev.mockReturnValue({[fnName]: tempStub});
+            } else {
+              throw new Error('Uknown stub. Neither Sinon nor Jest');
             }
-          });
-          let stubName = stubNames.join(".");
-          // const stub = stubCreator(stubName)
-          // sb.set(key, stub);
-          return this;
+          }
+          prev = tempStub;
+        } else {
+          // console.log(typeof prev, item, '<<< item')
+          // Current item is an object
+          let tempObj = {};
+          if (typeof prev === "object") {
+            // Prev was an object
+            prev[item] = tempObj;
+          } else {  
+            // Prev was a stub
+            if (prev.returns) {
+              // Sinon
+              prev.returns(tempObj)
+            } else if (prev.mockImplementation) {
+              // Jest
+              prev.mockReturnValue({[item]: tempObj});
+              // prev.mockImplementation(() => {
+              //   return () => tempObj
+              // });
+            } else {
+              throw new Error('Uknown stub. Neither Sinon nor Jest');
+            }
+          }
+          prev = tempObj;
         }
-        return acc;
-      }, null);
+      });
+      // console.log(provision);
+      this.provide(provision);
 
-      // if (typeof key === "object") {
-      //   Object.keys(key).forEach((k) => {
-      //     sb.set(k, key[k]);
-      //   });
-      //   return this;
-      // }
-      // sb.set(key, stub);
-      // return this;
-
-      return this;
-      // return CodeFragment(newAst, sb);
+      return CodeFragment(ast, sb);
     },
     getAST() {
       return ast;
     },
   };
 };
-
 
 const getCodeFragment = ({ ast, code, sb }) => {
   // Let us grab the cov_ function
@@ -882,9 +905,9 @@ const getCodeFragment = ({ ast, code, sb }) => {
       try {
         initialRunResult = eval(testCode);
         // console.log('Runs fine!!')
-      } catch(e) {
-        console.log(e, '<< error')
-        throw e
+      } catch (e) {
+        console.log(e, "<< error");
+        throw e;
       }
       delete global.getClosureValue;
     } else {
@@ -917,9 +940,6 @@ const getCodeFragment = ({ ast, code, sb }) => {
     global.__coverage__ = cov;
     // global.__coverage__ = global.__coverage__ ? {...global.__coverage__, ...cov} : cov;
     sb.set(`${coverageFnName}`, covFnName);
-
-  } else {
-    // console.log("SKIP coverage");
   }
   return CodeFragment(ast, sb);
 };
@@ -956,6 +976,19 @@ const parseFnStr = (
 
 const load = parseFn;
 const parse = parseFn;
+
+const Stubs = (stubImplementation) => {
+  const stubs = {};
+  return {
+      createStub(stubName){
+          stubs[stubName] = stubImplementation();
+          return stubs[stubName];
+      },
+      getStubs() {
+          return stubs;
+      }
+  }
+}
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   parseFn,

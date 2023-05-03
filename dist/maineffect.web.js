@@ -7,7 +7,7 @@
 		exports["maineffect"] = factory(require("@babel/core"), require("@babel/traverse"));
 	else
 		root["maineffect"] = factory(root["@babel/core"], root["@babel/traverse"]);
-})(window, function(__WEBPACK_EXTERNAL_MODULE__0__, __WEBPACK_EXTERNAL_MODULE__3__) {
+})(window, function(__WEBPACK_EXTERNAL_MODULE__0__, __WEBPACK_EXTERNAL_MODULE__2__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -257,6 +257,202 @@ exports.createContext = Script.createContext = function (context) {
 
 /***/ }),
 /* 2 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE__2__;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
+/***/ }),
+/* 4 */
 /***/ (function(module, exports) {
 
 var traverse = module.exports = function (obj) {
@@ -576,202 +772,6 @@ var hasOwnProperty = Object.hasOwnProperty || function (obj, key) {
 
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE__3__;
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-
-/***/ }),
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1078,7 +1078,7 @@ var substr = 'ab'.substr(-1) === 'b'
     }
 ;
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(4)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
 
 /***/ }),
 /* 6 */
@@ -1090,13 +1090,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseFnStr", function() { return parseFnStr; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "load", function() { return load; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parse", function() { return parse; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Stubs", function() { return Stubs; });
 /* harmony import */ var vm__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 /* harmony import */ var vm__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(vm__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var traverse__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
+/* harmony import */ var traverse__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4);
 /* harmony import */ var traverse__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(traverse__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _babel_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(0);
 /* harmony import */ var _babel_core__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_core__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _babel_traverse__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3);
+/* harmony import */ var _babel_traverse__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(2);
 /* harmony import */ var _babel_traverse__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_traverse__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5);
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(path__WEBPACK_IMPORTED_MODULE_4__);
@@ -1119,12 +1120,10 @@ const Sandbox = (fileName, state) => {
 
   return {
     namespace,
-    // get: (key) => fileSB[key],
+    stubs: {},
     set: (key, val) => {
-      // fileSB[key] = val;
       closures[key] = val;
     },
-    // reset: (val) => fileSB = val,
     getClosuresCode() {
       return Object.keys(closures).reduce((acc, curr) => {
         return `
@@ -1141,7 +1140,7 @@ const Sandbox = (fileName, state) => {
     },
     getFileName() {
       return fileName;
-    }
+    },
   };
 };
 
@@ -1225,7 +1224,7 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
   sb.set("__maineffect_args__", args);
   sb.set("__maineffect_this__", thisParam);
   const closureCode = sb.getClosuresCode();
-  const closures = sb.getClosures();
+  // const closures = sb.getClosures();
   // const getClosureValue = (key) => {
   //   return closures[key];
   // };
@@ -1266,8 +1265,6 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
     // console.log(JSON.stringify(contextObject.__coverage__, null, 2), '<< MISSING COV')
   }
 
-  
-
   // console.log(JSON.stringify(global.__coverage__, null, 2), '<<< AFTER RUN')
   // global.__coverage__ = {...global.__coverage__, ...testResult.__coverage__}
   // console.log(testResult.__coverage__)
@@ -1297,28 +1294,28 @@ const CodeFragment = (ast, sb) => {
             path.stop();
           }
         },
-        ObjectProperty : function (path) {
+        ObjectProperty: function (path) {
           if (path.node.key.name === key) {
             fn = path.node.value;
             path.stop();
           }
         },
-        ClassDeclaration : function (path) {
+        ClassDeclaration: function (path) {
           if (path.node.id.name === key) {
             fn = path.node.body;
             path.stop();
           }
         },
-        Method : function (path) {          
+        Method: function (path) {
           if (path.node.key.name === key) {
             fn = {
-              "type": "FunctionExpression",
-              "params": path.node.params,
-              "body": path.node.body
-            }
+              type: "FunctionExpression",
+              params: path.node.params,
+              body: path.node.body,
+            };
             path.stop();
           }
-        }
+        },
         // Property: function (path) {
         //   // console.log(path.key)
         // }
@@ -1389,7 +1386,7 @@ const CodeFragment = (ast, sb) => {
         Object.keys(key).forEach((k) => {
           sb.set(k, key[k]);
         });
-        return this;
+        return CodeFragment(ast, sb);
       }
       sb.set(key, stub);
       return CodeFragment(ast, sb);
@@ -1465,41 +1462,67 @@ const CodeFragment = (ast, sb) => {
     getSandbox() {
       return sb;
     },
-    stubFnCalls: function () {
-      const fn = traverse__WEBPACK_IMPORTED_MODULE_1___default()(ast).reduce(function (acc, x) {
-        if (x && x.type === "CallExpression") {
-          let stubNames = [];
-          traverse__WEBPACK_IMPORTED_MODULE_1___default()(x).forEach(function (x) {
-            if (x && x.type === "Identifier") {
-              stubNames.push(x.name);
+    stub: function (key, stubCreator) {
+      const arr = key.split(".");
+      let provision = {};
+      let prev = provision;
+      arr.forEach((item) => {
+        if (item.endsWith("()")) {
+          // Current item is a stub
+          let fnName = item.replace("()", "");
+          // console.log(typeof prev, fnName, '<<< fnName')
+          let tempStub = stubCreator(fnName);
+          if (typeof prev === "object") {
+            // Prev was an object
+            prev[fnName] = tempStub;            
+          } else {
+            // Prev was also a stub
+            if (prev.returns) {
+              // Sinon
+              prev.returns({[fnName]: tempStub})
+            } else if (prev.mockReturnValue) {
+              // Jest
+              prev.mockReturnValue({[fnName]: tempStub});
+            } else {
+              throw new Error('Uknown stub. Neither Sinon nor Jest');
             }
-          });
-          let stubName = stubNames.join(".");
-          // const stub = stubCreator(stubName)
-          // sb.set(key, stub);
-          return this;
+          }
+          prev = tempStub;
+        } else {
+          // console.log(typeof prev, item, '<<< item')
+          // Current item is an object
+          let tempObj = {};
+          if (typeof prev === "object") {
+            // Prev was an object
+            prev[item] = tempObj;
+          } else {  
+            // Prev was a stub
+            if (prev.returns) {
+              // Sinon
+              prev.returns(tempObj)
+            } else if (prev.mockImplementation) {
+              // Jest
+              prev.mockReturnValue({[item]: tempObj});
+              // prev.mockImplementation(() => {
+              //   return () => tempObj
+              // });
+            } else {
+              throw new Error('Uknown stub. Neither Sinon nor Jest');
+            }
+          }
+          prev = tempObj;
         }
-        return acc;
-      }, null);
+      });
+      // console.log(provision);
+      this.provide(provision);
 
-      // if (typeof key === "object") {
-      //   Object.keys(key).forEach((k) => {
-      //     sb.set(k, key[k]);
-      //   });
-      //   return this;
-      // }
-      // sb.set(key, stub);
-      // return this;
-
-      return this;
-      // return CodeFragment(newAst, sb);
+      return CodeFragment(ast, sb);
     },
     getAST() {
       return ast;
     },
   };
 };
-
 
 const getCodeFragment = ({ ast, code, sb }) => {
   // Let us grab the cov_ function
@@ -1524,9 +1547,9 @@ const getCodeFragment = ({ ast, code, sb }) => {
       try {
         initialRunResult = eval(testCode);
         // console.log('Runs fine!!')
-      } catch(e) {
-        console.log(e, '<< error')
-        throw e
+      } catch (e) {
+        console.log(e, "<< error");
+        throw e;
       }
       delete global.getClosureValue;
     } else {
@@ -1559,9 +1582,6 @@ const getCodeFragment = ({ ast, code, sb }) => {
     global.__coverage__ = cov;
     // global.__coverage__ = global.__coverage__ ? {...global.__coverage__, ...cov} : cov;
     sb.set(`${coverageFnName}`, covFnName);
-
-  } else {
-    // console.log("SKIP coverage");
   }
   return CodeFragment(ast, sb);
 };
@@ -1599,6 +1619,19 @@ const parseFnStr = (
 const load = parseFn;
 const parse = parseFn;
 
+const Stubs = (stubImplementation) => {
+  const stubs = {};
+  return {
+      createStub(stubName){
+          stubs[stubName] = stubImplementation();
+          return stubs[stubName];
+      },
+      getStubs() {
+          return stubs;
+      }
+  }
+}
+
 /* harmony default export */ __webpack_exports__["default"] = ({
   parseFn,
   load,
@@ -1607,7 +1640,7 @@ const parse = parseFn;
   parseFnStr,
 });
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(4), __webpack_require__(7)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3), __webpack_require__(7)))
 
 /***/ }),
 /* 7 */
