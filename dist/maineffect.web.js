@@ -1638,6 +1638,7 @@ const Stubs = (stubImplementation) => {
   parse: parseFn,
   require: parseFn,
   parseFnStr,
+  Stubs,
 });
 
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3), __webpack_require__(7)))

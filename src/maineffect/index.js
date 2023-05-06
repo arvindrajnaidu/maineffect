@@ -540,4 +540,5 @@ export default {
   parse: parseFn,
   require: parseFn,
   parseFnStr,
+  Stubs,
 };

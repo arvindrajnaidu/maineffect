@@ -996,6 +996,7 @@ const Stubs = (stubImplementation) => {
   parse: parseFn,
   require: parseFn,
   parseFnStr,
+  Stubs,
 });
 
 
