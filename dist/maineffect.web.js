@@ -1124,12 +1124,23 @@ const Sandbox = (fileName, state) => {
     set: (key, val) => {
       closures[key] = val;
     },
+    reset: () => {
+      const closureKeys = Object.keys(closures);
+      closureKeys.forEach(key => {
+        if (!key.startsWith('cov_') && !state[key]) {
+          delete closures[key];
+        }
+      });
+    },
+    dump: () => {
+      return closures;
+    },
     getClosuresCode() {
       return Object.keys(closures).reduce((acc, curr) => {
         return `
-                    ${acc}
-                    const ${curr} = getClosureValue("${curr}");
-                `;
+${acc}
+const ${curr} = getClosureValue("${curr}");
+`;
       }, "");
     },
     getClosures() {
@@ -1316,69 +1327,36 @@ const CodeFragment = (ast, sb) => {
             path.stop();
           }
         },
-        // Property: function (path) {
-        //   // console.log(path.key)
-        // }
       });
       fn = fn && getIsolatedFn(fn);
-      // console.log(fn)
-      // const fn = traverse(ast).reduce(function (acc, x) {
-      //   // if (x && x.type) console.log(x && x.type);
-      //   // if (acc && acc.isIsolated) return acc;
-      //   if (x && x.type === "VariableDeclarator" && x.id && x.id.name === key) {
-      //     return getIsolatedFn(x.init);
-      //   } else if (x && x.type === "Property" && x.key && x.key.name === key) {
-      //     return getIsolatedFn(x.value);
-      //   } else if (
-      //     x &&
-      //     x.type === "ObjectProperty" &&
-      //     x.key &&
-      //     x.key.name === key
-      //   ) {
-      //     return getIsolatedFn(x.value);
-      //   } else if (
-      //     x &&
-      //     x.type === "MethodDefinition" &&
-      //     x.key &&
-      //     x.key.name === key
-      //   ) {
-      //     return getIsolatedFn(x.value);
-      //   } else if (
-      //     x &&
-      //     x.type === "ClassMethod" &&
-      //     x.key &&
-      //     x.key.name === key
-      //   ) {
-      //     return getIsolatedFn({ ...x, type: "FunctionExpression" });
-      //   } else if (
-      //     x &&
-      //     x.type === "ClassDeclaration" &&
-      //     x.id &&
-      //     x.id.type === "Identifier" &&
-      //     x.id.name === key
-      //   ) {
-      //     return x;
-      //   } else if (
-      //     x &&
-      //     x.type === "FunctionDeclaration" &&
-      //     x.id &&
-      //     x.id.type === "Identifier" &&
-      //     x.id.name === key
-      //   ) {
-      //     return getIsolatedFn(x);
-      //   } else if (
-      //     x &&
-      //     x.type === "FunctionExpression"
-      //   ) {
-      //     return getIsolatedFn(x);
-      //   }
-      //   return acc;
-      // }, null);
-
       if (!fn) {
         throw new Error("Function not found");
       }
       var newAst = _babel_core__WEBPACK_IMPORTED_MODULE_2__["types"].program([fn]);
+      return CodeFragment(newAst, sb);
+    },
+    findCallback: (callExpessionName, callbackIndex) => {
+      let callback;
+      _babel_traverse__WEBPACK_IMPORTED_MODULE_3___default()(ast, {
+        enter(path) {
+          if (callback) {
+            path.stop();
+          }
+        },
+        CallExpression: function (path) {
+          if (path.node.callee && path.node.callee.name === callExpessionName) {
+            callback = path.node.arguments[callbackIndex]
+            path.stop();
+          }
+        },
+      });
+      callback = callback && getIsolatedFn(callback);
+      if (!callback) {
+        throw new Error("Callback or callexpression not found");
+      }
+      var newAst = _babel_core__WEBPACK_IMPORTED_MODULE_2__["types"].program([callback]);
+
+      // console.log(sb.getClosureValue())
       return CodeFragment(newAst, sb);
     },
     provide: function (key, stub) {
@@ -1521,6 +1499,13 @@ const CodeFragment = (ast, sb) => {
     getAST() {
       return ast;
     },
+    getProvisions(){ 
+      return sb.dump()
+    },
+    reset() {      
+      sb.reset();
+      return CodeFragment(ast, sb);
+    }
   };
 };
 
@@ -1587,7 +1572,6 @@ const getCodeFragment = ({ ast, code, sb }) => {
 };
 
 const parseFn = (fnAbsName, sandbox = {}, options = { plugins: [] }) => {
-  // console.log(fnAbsName)
   const sb = Sandbox(fnAbsName, sandbox);
   const { ast, code } = Object(_babel_core__WEBPACK_IMPORTED_MODULE_2__["transformFileSync"])(fnAbsName, {
     sourceType: "module",
