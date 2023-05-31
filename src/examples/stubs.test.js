@@ -3,6 +3,10 @@ import { parseFn, Stubs } from "../maineffect";
 describe("Stubs", () => {
   const parsed = parseFn(require.resolve("./stubs"));
 
+  beforeEach(() => {
+    parsed.reset();
+  })
+
   test("should handle chain of objects", () => {
     const stubs = Stubs(jest.fn);
     parsed

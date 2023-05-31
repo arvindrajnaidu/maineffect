@@ -4,10 +4,13 @@ import { parseFn } from "../maineffect";
 const parsed = parseFn(require.resolve("./partner.js"));
 
 describe("getFoo()", () => {
-  it("should return a word", () => {
-    parsed.find("Conversation").callWith()
+  beforeEach(() => {
+    parsed.reset();
   });
   it("should return a word", () => {
-    parsed.find("replyTo").callWith(1)
+    parsed.find("Conversation").callWith();
+  });
+  it("should return a word", () => {
+    parsed.find("replyTo").callWith(1);
   });
 });

@@ -6,7 +6,9 @@ import sinon, { stub } from 'sinon'
 
 describe('Greeeting', () => {
     const parsed = load(require.resolve('./Greeting.js'), { React });
-
+    beforeEach(() => {
+        parsed.reset();
+    })
     describe('constructor()', () => {
         it('should setup the right state', () => {
             const thisParam = {}

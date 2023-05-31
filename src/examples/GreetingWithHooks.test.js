@@ -3,10 +3,14 @@ import { parseFn } from "../maineffect";
 import React, { useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 
-describe("GreeetingWithHooks", () => {
+describe.only("GreeetingWithHooks", () => {
   const parsed = parseFn(require.resolve("./GreetingWithHooks.js"), {
     React,
     useState,
+  });
+
+  beforeEach(() => {
+    parsed.reset();
   });
 
   it("should render", () => {
