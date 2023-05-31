@@ -45,7 +45,7 @@ Maineffect "parses" the module under test into it's [AST](https://en.wikipedia.o
 - We dot care about dependencies in the test. Like above, we don't even have a ``logger`` module installed.
 
 ### Example #2
-**Provide** a variable with any value. **Fold** stuff you don't care about.
+**Provide** a variable with any value.
 
 >taxes.js
 
@@ -68,18 +68,19 @@ Maineffect "parses" the module under test into it's [AST](https://en.wikipedia.o
 	describe('getAmountAfterTaxes', () => {
 	    it('should return 50 when called with 100 and a rate of 0.5', async () => {
           	const { result } = taxes.find('getAmountAfterTaxes')
-                            .provide('log', () => {})					
-                            .fold('taxRate', 0.5)
+                            .provide({
+								log: jest.fn(),
+								getTaxeRate: async () => 0.5
+							})
                             .callWith(100)
           	expect(await result).to.equal(50)
 	    })
 	})
 
->Here, we want to test the **getAmountAfterTaxes** function of **taxes.js**. Once we ``find`` the function, we ``provide`` **log** as an empty function (stubs also work here). Then we ``fold`` the **taxRate** constant to the value **0.5** and call the function.
+>Here, we want to test the **getAmountAfterTaxes** function of **taxes.js**. Once we ``find`` the function, we ``provide`` **log** as a jest mock and **getTaxRate** as a function the returns **0.5** and call the function.
 
 #### Advantages
 
-- All we care about is the value of **taxRate**. We are not here to test getTaxeRate. So we **fold** the right-hand-side of that assignment to a value we like.
 - We can mock dependencies like **log**
 
 ### Example #3

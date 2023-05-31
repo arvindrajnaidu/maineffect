@@ -1,5 +1,4 @@
 import vm from "vm";
-import traverse from "traverse";
 import {
   transform,
   transformFromAstSync,
@@ -285,36 +284,7 @@ const CodeFragment = (ast, sb) => {
       logger(scriptSrc);
       return this;
     },
-    fold: (key, replacement) => {
-      sb.set(getReplacementKey(key), replacement);
-      const fn = traverse(ast).map(function (x) {
-        if (x && x.type === "VariableDeclarator") {
-          if (x.id && x.id.name === key) {
-            this.update({
-              ...x,
-              init: {
-                type: "Identifier",
-                name: `getClosureValue("${getReplacementKey(key)}")`,
-              },
-            });
-          } else if (x.id && x.id.type === "ObjectPattern") {
-            const matchedKeys =
-              x.id.properties &&
-              x.id.properties.filter((p) => p.key && p.key.name === key);
-            if (matchedKeys.length > 0) {
-              this.update({
-                ...x,
-                init: {
-                  type: "Identifier",
-                  name: getReplacementKey(key),
-                },
-              });
-            }
-          }
-        }
-      });
-      return CodeFragment(fn, sb);
-    },
+    
     foldWithObject: function (folder) {
       if (Object.keys(folder).length === 0) {
         return this;
