@@ -976,7 +976,21 @@ const CodeFragment = (ast, sb) => {
             path.stop();
           }
         },
-        FunctionDeclaration: function (path) {
+        ArrowFunctionExpression: function (path) {
+          if (!path.node.leadingComments) {
+            return;
+          }
+          for (let comment of path.node.leadingComments) {
+            if (comment.value.startsWith("name:")) {
+              const name = comment.value.replace("name:", "").trim();
+              if (name === key) {
+                fn = path.node;
+                return path.stop();
+              }
+            }
+          }
+        },
+        FunctionDeclaration: function (path) {          
           if (path.node.id.name === key) {
             fn = path.node;
             path.stop();
