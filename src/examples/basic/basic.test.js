@@ -4,9 +4,6 @@ import { parseFn } from '../../maineffect'
 
 describe('basic', () => {    
     const parsed = parseFn(require.resolve('./basic'))
-
-    // console.log(parsed.source())
-
     describe('sum()', () => {
         it('should return the sum of two numbers', () => {
             const result = parsed

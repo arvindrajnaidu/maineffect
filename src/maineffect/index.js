@@ -222,6 +222,7 @@ const CodeFragment = (ast, sb) => {
           if (path.node.key.name === key) {
             fn = {
               type: "FunctionExpression",
+              async: path.node.async,
               params: path.node.params,
               body: path.node.body,
             };
