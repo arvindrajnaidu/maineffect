@@ -25,6 +25,11 @@ describe('basic', () => {
             expect(() => parsed.find('pitcher').callWith('foo')).throws('foo')
         })
     })
+    describe('delayedRejection()', () => {
+        it('should throw an error with the argument as message', async () => {
+            await parsed.find('delayedRejection').callWith('foo')
+        })
+    })
     describe('pitcherAsync()', () => {
         it('should throw an error with the argument as message', async () => {
             try {
@@ -52,4 +57,13 @@ describe('basic', () => {
             expect(result).to.equal(true);
         })
     })
+    describe('find()', () => {
+        it('should find the right function', () => {
+            const result = parsed
+                    .find('a')
+                    .callWith()
+            expect(result).to.equal(undefined);
+        })
+    })
+
 })

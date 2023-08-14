@@ -970,13 +970,17 @@ const CodeFragment = (ast, sb) => {
             path.stop();
           }
         },
-        VariableDeclarator: function (path) {
-          if (path.node.id.name === key) {
-            fn = path.node.init;
-            path.stop();
-          }
-        },
+        // VariableDeclarator: function (path) {
+        //   if (path.node.id.name === key) {
+        //     fn = path.node.init;
+        //     path.stop();
+        //   }
+        // },
         ArrowFunctionExpression: function (path) {
+          if (path.parent.id && path.parent.id.name === key) {
+            fn = path.parent;
+            return path.stop();
+          }
           if (!path.node.leadingComments) {
             return;
           }
