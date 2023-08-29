@@ -438,7 +438,7 @@ const getCodeFragment = ({ ast, code, sb }) => {
       const contextObject = {
         ...global,
         getClosureValue: sb.getClosureValue,
-        require: require ? require : () => {},
+        require: global.require ? global.require : () => {},
       };
       vm.createContext(contextObject);
       initialRunResult = vm.runInContext(testCode, contextObject);

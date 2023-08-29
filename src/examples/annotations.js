@@ -1,21 +1,17 @@
-async function foo ()  {
-    const v = await routes({
-        method: 'GET',
-        handler: /*name:vHandler*/() => {
-            return 1;
-        }
-    });
-    return v;
-}
+import routes from 'routes';
 
-async function bar ()  {
-    const v = await routes({
-        method: 'GET',
-        handler: /*name:barHandler*/() => new Promise((resolve, reject) => {
-            setTimeout(() => {
-                return resolve(2);
-            }, 0);
-        })
-    });
-    return v;
-}
+const get = routes({
+    method: 'GET',
+    handler: /*name:vHandler*/() => {
+        return 1;
+    }
+});
+
+const post = routes({
+    method: 'GET',
+    handler: /*name:barHandler*/() => new Promise((resolve) => {
+        setTimeout(() => {
+            return resolve(2);
+        }, 0);
+    })
+});

@@ -795,6 +795,7 @@ const Sandbox = (fileName, state) => {
     .slice(1)
     .join("_");
 
+  const removedImportNodes = [];
   return {
     namespace,
     stubs: {},
@@ -829,10 +830,14 @@ const ${curr} = getClosureValue("${curr}");
     getFileName() {
       return fileName;
     },
+    addRemovedImportNode(node) {
+      removedImportNodes.push(node);
+    },
+    getRemovedImports () {
+      return removedImportNodes;
+    }
   };
 };
-
-const getReplacementKey = (key) => `__maineffect_${key}_replacement__`;
 
 const getCoverageFnName = (node) => {
   let firstIdentifier = null;
@@ -847,10 +852,11 @@ const getCoverageFnName = (node) => {
   return firstIdentifier && firstIdentifier.name;
 };
 
-const ImportRemover = () => () => {
+const ImportRemover = (onImportRemoved) => () => {
   return {
     visitor: {
       ImportDeclaration(path, state) {
+        onImportRemoved(path.node);
         path.remove();
       },
     },
@@ -1185,7 +1191,7 @@ const getCodeFragment = ({ ast, code, sb }) => {
       ${sb.getClosuresCode()}
       ${code}
       return {covFnName: ${coverageFnName}, cov: __coverage__}
-      })({}, ()=>{}, {}, '', '');
+      })({}, require, {}, '', '');
     `;
 
     if (!sb.getClosureValue) {
@@ -1208,6 +1214,7 @@ const getCodeFragment = ({ ast, code, sb }) => {
       const contextObject = {
         ...global,
         getClosureValue: sb.getClosureValue,
+        require: global.require ? global.require : () => {},
       };
       vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
       initialRunResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject);
@@ -1240,13 +1247,19 @@ const getCodeFragment = ({ ast, code, sb }) => {
 
 const parseFn = (fnAbsName, sandbox = {}, options = { plugins: [] }) => {
   const sb = Sandbox(fnAbsName, sandbox);
+  const removedImports = [];
+  function onImportRemoved(node) {
+    removedImports.push(node);
+  }
   const { ast, code } = Object(_babel_core__WEBPACK_IMPORTED_MODULE_1__["transformFileSync"])(fnAbsName, {
     sourceType: "module",
     ast: true,
     code: true,
     // plugins: [ImportRemover(), istanbul],
-    plugins: [ImportRemover(), ...options.plugins],
+    plugins: [ImportRemover(onImportRemoved), ...options.plugins],
   });
+  removedImports.forEach(sb.addRemovedImportNode);
+
   return getCodeFragment({ ast, code, sb });
 };
 
@@ -1257,13 +1270,18 @@ const parseFnStr = (
   options = { plugins: [] }
 ) => {
   const sb = Sandbox(fnAbsName, sandbox);
+  const removedImports = [];
+  function onImportRemoved(node) {
+    removedImports.push(node);
+  }
   const { ast, code } = Object(_babel_core__WEBPACK_IMPORTED_MODULE_1__["transform"])(fnStr, {
     filename: fnAbsName,
     sourceType: "module",
     ast: true,
     code: true,
-    plugins: [ImportRemover(), ...options.plugins],
+    plugins: [ImportRemover(onImportRemoved), ...options.plugins],
   });
+  removedImports.forEach(sb.addRemovedImportNode);
   return getCodeFragment({ ast, code, sb });
 };
 

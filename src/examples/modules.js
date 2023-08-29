@@ -6,7 +6,7 @@ const foo = () => {
     return 'foo';
 }
 
-export const show = async (obj) => {
+export const show = (obj) => {
     util.inspect(obj);
     return foo();
 }
