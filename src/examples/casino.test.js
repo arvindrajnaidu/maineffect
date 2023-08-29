@@ -4,9 +4,9 @@ import { parse } from "../maineffect";
 
 const parsed = parse(require.resolve("./casino"), {
   request: () => "Joe",
-  Logger: () => ({
-    info: () => {},
-  }),
+  // Logger: () => ({
+  //   info: () => {},
+  // }),
 });
 
 describe("casino", () => {

@@ -1,9 +1,6 @@
 import Logger from 'util';
 import { request } from 'https';
 
-const log = Logger()
-log.info('Inside Handler')
-
 export const handler = async (req, res) => {    
     log.info('Inside handler')
     const myName = await request('/name/me')

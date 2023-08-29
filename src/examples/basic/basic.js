@@ -11,8 +11,6 @@ export const sumAsync = async (a, b) => {
 
 export const delayedRejection = async (a, b) => new Promise((resolve) => {
         setTimeout(() => {
-            // Async with a function that has a compliation error
-            // a = x;
             resolve(a + b)
         }, 1000)
 })
@@ -37,15 +35,4 @@ export const copyUserObject = (user, newName) => {
 
 function simpleFunction () {
     return true
-}
-
-const somethingWithAFunctionThatStartsWithSmallA = () => {
-    const a = logger.info('is').severe.armageddon('explosive');
-    return 3;
-};
-  
-function goo() {  
-    function a() {
-    //   console.log('MAN')
-    }
 }

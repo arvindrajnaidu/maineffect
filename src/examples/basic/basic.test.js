@@ -57,13 +57,4 @@ describe('basic', () => {
             expect(result).to.equal(true);
         })
     })
-    describe('find()', () => {
-        it('should find the right function', () => {
-            const result = parsed
-                    .find('a')
-                    .callWith()
-            expect(result).to.equal(undefined);
-        })
-    })
-
 })

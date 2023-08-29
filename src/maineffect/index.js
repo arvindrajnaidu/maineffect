@@ -19,6 +19,7 @@ const Sandbox = (fileName, state) => {
     .slice(1)
     .join("_");
 
+  const removedImportNodes = [];
   return {
     namespace,
     stubs: {},
@@ -53,10 +54,14 @@ const ${curr} = getClosureValue("${curr}");
     getFileName() {
       return fileName;
     },
+    addRemovedImportNode(node) {
+      removedImportNodes.push(node);
+    },
+    getRemovedImports () {
+      return removedImportNodes;
+    }
   };
 };
-
-const getReplacementKey = (key) => `__maineffect_${key}_replacement__`;
 
 const getCoverageFnName = (node) => {
   let firstIdentifier = null;
@@ -71,10 +76,11 @@ const getCoverageFnName = (node) => {
   return firstIdentifier && firstIdentifier.name;
 };
 
-const ImportRemover = () => () => {
+const ImportRemover = (onImportRemoved) => () => {
   return {
     visitor: {
       ImportDeclaration(path, state) {
+        onImportRemoved(path.node);
         path.remove();
       },
     },
@@ -409,7 +415,7 @@ const getCodeFragment = ({ ast, code, sb }) => {
       ${sb.getClosuresCode()}
       ${code}
       return {covFnName: ${coverageFnName}, cov: __coverage__}
-      })({}, ()=>{}, {}, '', '');
+      })({}, require, {}, '', '');
     `;
 
     if (!sb.getClosureValue) {
@@ -432,6 +438,7 @@ const getCodeFragment = ({ ast, code, sb }) => {
       const contextObject = {
         ...global,
         getClosureValue: sb.getClosureValue,
+        require: require ? require : () => {},
       };
       vm.createContext(contextObject);
       initialRunResult = vm.runInContext(testCode, contextObject);
@@ -464,13 +471,19 @@ const getCodeFragment = ({ ast, code, sb }) => {
 
 export const parseFn = (fnAbsName, sandbox = {}, options = { plugins: [] }) => {
   const sb = Sandbox(fnAbsName, sandbox);
+  const removedImports = [];
+  function onImportRemoved(node) {
+    removedImports.push(node);
+  }
   const { ast, code } = transformFileSync(fnAbsName, {
     sourceType: "module",
     ast: true,
     code: true,
     // plugins: [ImportRemover(), istanbul],
-    plugins: [ImportRemover(), ...options.plugins],
+    plugins: [ImportRemover(onImportRemoved), ...options.plugins],
   });
+  removedImports.forEach(sb.addRemovedImportNode);
+
   return getCodeFragment({ ast, code, sb });
 };
 
@@ -481,13 +494,18 @@ export const parseFnStr = (
   options = { plugins: [] }
 ) => {
   const sb = Sandbox(fnAbsName, sandbox);
+  const removedImports = [];
+  function onImportRemoved(node) {
+    removedImports.push(node);
+  }
   const { ast, code } = transform(fnStr, {
     filename: fnAbsName,
     sourceType: "module",
     ast: true,
     code: true,
-    plugins: [ImportRemover(), ...options.plugins],
+    plugins: [ImportRemover(onImportRemoved), ...options.plugins],
   });
+  removedImports.forEach(sb.addRemovedImportNode);
   return getCodeFragment({ ast, code, sb });
 };
 
