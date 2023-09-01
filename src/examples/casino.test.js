@@ -18,7 +18,7 @@ describe("casino", () => {
     const sendStub = stub();
     const result = await handler
       .provide("log", { info: () => {} })
-      .provide("Math", { random: () => 1 })
+      .inject("Math", { random: () => 1 })
       .callWith({ query: { user: "James" } }, { send: sendStub }).result;
     const expected = `Hello James. I am Joe. Your lucky number is 1`;
     expect(sendStub.calledWithExactly(expected)).to.equal(true);

@@ -191,7 +191,7 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
 };
 
 const CodeFragment = (ast, sb) => {
-  return {
+  const codeFg = {
     find: (key) => {
       let fn;
       babelTraverse(ast, {
@@ -404,6 +404,8 @@ const CodeFragment = (ast, sb) => {
       return CodeFragment(ast, sb);
     }
   };
+  codeFg.inject = codeFg.provide;
+  return codeFg;
 };
 
 const getCodeFragment = ({ ast, code, sb }) => {
