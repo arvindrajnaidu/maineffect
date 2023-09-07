@@ -305,9 +305,14 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
     delete global.getClosureValue;
   } else {
     const contextObject = { ...global, getClosureValue };
-    vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
+    const newContextObj = vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
     // console.log(testCode, '<< testCode')
-    testResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject);
+    if (newContextObj) {
+      testResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, newContextObj);
+    } else {
+      testResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject);
+    }
+    
 
     // console.log(JSON.stringify(contextObject.__coverage__, null, 2), '<< alt lats')
     // global.getClosureValue = getClosureValue;

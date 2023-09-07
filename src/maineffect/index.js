@@ -171,9 +171,14 @@ const evaluateScript = (thisParam = null, ast, sb, getFn = false, ...args) => {
     delete global.getClosureValue;
   } else {
     const contextObject = { ...global, getClosureValue };
-    vm.createContext(contextObject);
+    const newContextObj = vm.createContext(contextObject);
     // console.log(testCode, '<< testCode')
-    testResult = vm.runInContext(testCode, contextObject);
+    if (newContextObj) {
+      testResult = vm.runInContext(testCode, newContextObj);
+    } else {
+      testResult = vm.runInContext(testCode, contextObject);
+    }
+    
 
     // console.log(JSON.stringify(contextObject.__coverage__, null, 2), '<< alt lats')
     // global.getClosureValue = getClosureValue;
