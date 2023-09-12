@@ -1,7 +1,7 @@
 {
   "name": "maineffectjs",
-  "version": "0.4.3",
-  "description": "Testing in javascript made easier.",
+  "version": "0.4.5",
+  "description": "Dependency Injection for Javascript Functions",
   "main": "dist/maineffect.js",
   "scripts": {
     "test": "jest --coverage",

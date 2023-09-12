@@ -335,6 +335,10 @@ const CodeFragment = (ast, sb) => {
       let fn;
       _babel_traverse__WEBPACK_IMPORTED_MODULE_2___default()(ast, {
         enter(path) {
+          // if (path.node.type === 'FunctionExpression')  {
+            
+          // }
+          
           if (fn) {
             path.stop();
           }
@@ -348,6 +352,24 @@ const CodeFragment = (ast, sb) => {
         ArrowFunctionExpression: function (path) {
           if (path.parent.id && path.parent.id.name === key) {
             fn = path.parent;
+            return path.stop();
+          }
+          if (!path.node.leadingComments) {
+            return;
+          }
+          for (let comment of path.node.leadingComments) {
+            if (comment.value.startsWith("name:")) {
+              const name = comment.value.replace("name:", "").trim();
+              if (name === key) {
+                fn = path.node;
+                return path.stop();
+              }
+            }
+          }
+        },
+        FunctionExpression: function (path) {
+          if (path.node.id && path.node.id.name === key) {
+            fn = path.node;
             return path.stop();
           }
           if (!path.node.leadingComments) {
@@ -581,8 +603,17 @@ const getCodeFragment = ({ ast, code, sb }) => {
         getClosureValue: sb.getClosureValue,
         require: global.require ? global.require : () => {},
       };
-      vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
-      initialRunResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject);
+      
+      const newContextObj = vm__WEBPACK_IMPORTED_MODULE_0___default.a.createContext(contextObject);
+      // console.log(testCode, '<< testCode')
+      if (newContextObj) {
+        initialRunResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, newContextObj);
+      } else {
+        initialRunResult = vm__WEBPACK_IMPORTED_MODULE_0___default.a.runInContext(testCode, contextObject);
+      }
+
+      // vm.createContext(contextObject);
+      // initialRunResult = vm.runInContext(testCode, contextObject);
 
       // global.getClosureValue = sb.getClosureValue;
       // try {
