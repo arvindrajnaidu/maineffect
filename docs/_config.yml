@@ -1,0 +1,4 @@
+theme: jekyll-theme-modernist
+title: maineffectjs
+description: Unit test any JavaScript function with zero dependencies installed
+baseurl: "/maineffect"
