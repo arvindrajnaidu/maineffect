@@ -1,5 +1,8 @@
 # Maineffect
 
+![Tests](https://github.com/arvindrajnaidu/maineffect/actions/workflows/ci.yml/badge.svg)
+![npm](https://img.shields.io/npm/v/maineffectjs)
+
 **Unit test any JavaScript function with zero dependencies installed.**
 
 Maineffect is a testing library that isolates functions from their dependencies at the source level. It parses your code into an [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree), strips all imports, and lets you inject only what you need. The function under test runs in a sandbox — no module resolution, no dependency installation, no complex mocking setup.
