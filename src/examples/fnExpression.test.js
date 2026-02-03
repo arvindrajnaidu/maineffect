@@ -17,4 +17,8 @@ describe("barani", () => {
     let result = parsed.find("bar2").callWith();
     expect(result).to.equal(2);
   });
+  it("should find an anonymous function expression assigned to a variable", () => {
+    let result = parsed.find("bar3").callWith();
+    expect(result).to.equal(3);
+  });
 });

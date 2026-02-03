@@ -238,6 +238,10 @@ const CodeFragment = (ast, sb) => {
             fn = path.node;
             return path.stop();
           }
+          if (path.parent.id && path.parent.id.name === key) {
+            fn = path.parent;
+            return path.stop();
+          }
           if (!path.node.leadingComments) {
             return;
           }
@@ -269,6 +273,16 @@ const CodeFragment = (ast, sb) => {
             path.stop();
           }
         },
+        ClassExpression: function (path) {
+          if (path.node.id && path.node.id.name === key) {
+            fn = path.node.body;
+            return path.stop();
+          }
+          if (path.parent.id && path.parent.id.name === key) {
+            fn = path.node.body;
+            return path.stop();
+          }
+        },
         Method: function (path) {
           if (path.node.key.name === key) {
             fn = {
@@ -297,7 +311,14 @@ const CodeFragment = (ast, sb) => {
           }
         },
         CallExpression: function (path) {
-          if (path.node.callee && path.node.callee.name === callExpessionName) {
+          const callee = path.node.callee;
+          if (!callee) return;
+          const calleeName = callee.name
+            || (callee.type === "MemberExpression"
+              && callee.object
+              && callee.property
+              && `${callee.object.name}.${callee.property.name}`);
+          if (calleeName === callExpessionName) {
             callback = path.node.arguments[callbackIndex]
             path.stop();
           }
