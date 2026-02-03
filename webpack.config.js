@@ -39,8 +39,12 @@ const clientConfig = {
     ...nodeConfig.output,    
     filename: 'maineffect.web.js',  
   },
-  node: {
-    fs: 'empty',
+  resolve: {
+    fallback: {
+      fs: false,
+      vm: false,
+      path: false,
+    }
   }
 }
 module.exports = [nodeConfig, clientConfig]

@@ -5,7 +5,6 @@
   "main": "dist/maineffect.js",
   "scripts": {
     "test": "jest --coverage",
-    "test-mocha": "nyc mocha src/**/*.test.* --require ./babel-register.js --require global-jsdom/register",
     "build": "npx webpack --config webpack.config.js"
   },
   "keywords": [
@@ -32,30 +31,16 @@
     "axios": "^1.4.0",
     "babel-plugin-istanbul": "^6.0.0",
     "chai": "^4.2.0",
-    "global-jsdom": "^8.6.0",
+    "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.2.2",
     "jsdom": "^20.0.1",
-    "mocha": "^7.0.1",
-    "nodemon": "1.12.0",
-    "nyc": "^13.3.0",
+    "nodemon": "^3.1.11",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-test-renderer": "^18.0.0",
-    "sinon": "^7.4.1",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0"
-  },
-  "nyc": {
-    "all": true,
-    "cache": false,
-    "sourceMap": false,
-    "instrument": false,
-    "include": [
-      "src/examples/**/*.js"
-    ],
-    "exclude": [
-      "**/**.test.js"
-    ]
+    "sinon": "^21.0.1",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^5.1.4"
   },
   "directories": {
     "test": "test"

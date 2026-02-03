@@ -3,6 +3,9 @@ module.exports = {
     collectCoverageFrom: [
         '**/examples/**/*.js'
     ],
+    transformIgnorePatterns: [
+        '/node_modules/(?!sinon)'
+    ],
     //   modulePathIgnorePatterns: [
     //     'examples/.*',
     //     'packages/.*/build',
