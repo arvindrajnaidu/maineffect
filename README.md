@@ -1,150 +1,301 @@
 # Maineffect
-## Reflection based testing for Javascript
 
-Maineffect enables you to write tests faster by helping you easily isolate the test execution path. It does so by using staticially analyzing the code and isolating the function under test. This enables one to ignore required modules and their dependencies. 
+**Unit test any JavaScript function with zero dependencies installed.**
 
-Maineffect "parses" the module under test into it's [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) representation. From there on it lets one traverse the AST to **find** functions they intend to test.
+Maineffect is a testing library that isolates functions from their dependencies at the source level. It parses your code into an [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree), strips all imports, and lets you inject only what you need. The function under test runs in a sandbox — no module resolution, no dependency installation, no complex mocking setup.
 
-### Demo
+This means you can test code that depends on databases, APIs, loggers, or any external module **without installing any of them**.
+
+## Why not just use Jest mocking?
+
+Jest's mocking model is powerful but complex. Developers frequently struggle with:
+
+- `jest.mock()` vs `jest.fn()` vs `jest.spyOn()` — three overlapping mechanisms with different behaviors
+- Invisible hoisting — `jest.mock()` is silently moved above imports, leading to confusing execution order
+- Factory functions, `__mocks__` directories, `mockImplementation` vs `mockReturnValue` — layers of API
+- Partial mocking with `jest.requireActual()` — a workaround that reveals the awkwardness
+- ES modules vs CommonJS — mocking behaves differently depending on module system
+
+The result: developers litter tests with `console.log` statements just to verify their mocks are working. The tool hasn't made the state of things obvious.
+
+**Maineffect's model is flat.** Imports don't exist. You provide what the function needs. You call it. There's nothing hidden, no hoisting, no module resolution to reason about. A beginner can understand it in minutes.
+
+## How it works
+
+1. **Parse** — Maineffect reads your source file and converts it to an AST using Babel
+2. **Strip** — All `import` and `require` statements are removed
+3. **Find** — You locate the function you want to test by name
+4. **Provide** — You inject mock values for any dependencies the function uses
+5. **Call** — The function executes in an isolated sandbox and returns the result
+
+This is the same AST parse/transform/generate pipeline that Babel, TypeScript, and Webpack already use in every modern JavaScript project. Maineffect simply adds one transform: removing imports.
+
+And since unit tests should not be concerned with side effects, stripping imports isn't a compromise — it's doing exactly what a unit test should do.
+
+## Installation
+
+```
+npm install maineffectjs
+```
+
+## Quick start
+
+### Parse, find, call
+
+**Parse** the file (don't require or import it). **Find** the function by name. **Call** it with arguments.
+
+```js
+// math.js
+import log from 'logger'
+
+const add = (a, b) => a + b
+```
+
+```js
+// math.test.js
+import { parseFn } from 'maineffectjs'
+
+const math = parseFn(require.resolve('./math'))
+
+describe('add', () => {
+  it('should return the sum of two numbers', () => {
+    const result = math.find('add').callWith(51, 82)
+    expect(result).to.equal(133)
+  })
+})
+```
+
+Notice: `add` is not exported. The `logger` module is not installed. The test works anyway.
+
+### Inject dependencies with `provide`
+
+When a function uses an external dependency, supply it with `provide`.
+
+```js
+// side-effects.js
+import { request } from 'http'
+
+const generateFooService = async () => {
+  const word = await request('/foo')
+  return word
+}
+```
+
+```js
+// side-effects.test.js
+import { parseFn } from 'maineffectjs'
+
+const parsed = parseFn(require.resolve('./side-effects'))
+
+it('should return a word using a service', async () => {
+  const result = await parsed
+    .find('generateFooService')
+    .provide('request', () => 'foo')
+    .callWith()
+  expect(result).to.equal('foo')
+})
+```
+
+No `http` module needed. No `jest.mock()`. Just provide the value and call the function.
+
+### Stub chained calls
+
+Real code often has deeply chained calls like `logger.stream.foo.bar.info()`. With Jest, you'd write:
+
+```js
+{
+  logger: {
+    stream: {
+      foo: {
+        bar: {
+          info: jest.fn().mockReturnValue(...)
+        }
+      }
+    }
+  }
+}
+```
+
+With Maineffect, describe the chain as a string:
+
+```js
+// stubs.js
+import logger from 'logger'
+
+const one = () => {
+  logger.stream.foo.bar.info('adding')
+  return 1
+}
+```
+
+```js
+// stubs.test.js
+import { parseFn, Stubs } from 'maineffectjs'
+
+const parsed = parseFn(require.resolve('./stubs'))
+
+test('should handle chain of objects', () => {
+  const stubs = Stubs(jest.fn)
+  parsed
+    .find('one')
+    .stub('logger.stream.foo.bar.info()', stubs.createStub)
+    .callWith()
+  expect(stubs.getStubs().info).toBeCalledWith('adding')
+})
+```
+
+Keys ending with `()` become stub functions. Everything else becomes a plain object. Works with any mix of properties and function calls:
+
+```js
+.stub('logger().info().debug()', stubs.createStub)       // all functions
+.stub('logger.info().severe.armageddon()', stubs.createStub) // mixed
+```
+
+### Test anonymous functions
+
+Give names to anonymous functions with a comment annotation, then find them like any other function.
+
+```js
+// annotations.js
+import routes from 'routes'
+
+const get = routes({
+  method: 'GET',
+  handler: /*name:vHandler*/() => {
+    return 1
+  }
+})
+```
+
+```js
+// annotations.test.js
+import { parseFn } from 'maineffectjs'
+
+const parsed = parseFn(require.resolve('./annotations'), { routes: () => {} })
+
+it('should find annotated fn', async () => {
+  const result = await parsed.find('vHandler').callWith()
+  expect(result).toBe(1)
+})
+```
+
+### Test React components
+
+Extract components with `getFn()` and render them with your preferred testing library.
+
+```js
+// GreetingWithHooks.js
+import React, { useState } from 'react'
+
+const Greeting = ({ greet }) => {
+  const [name, setName] = useState(greet)
+  return (
+    <>
+      <h1>{`Hello ${name}`}</h1>
+      <button data-testid="greet" onClick={() => setName(`${name} the great`)} />
+    </>
+  )
+}
+```
+
+```js
+// GreetingWithHooks.test.js
+import { parseFn } from 'maineffectjs'
+import React, { useState } from 'react'
+import { fireEvent, render, screen } from '@testing-library/react'
+
+const parsed = parseFn(require.resolve('./GreetingWithHooks.js'), {
+  React,
+  useState,
+})
+
+it('should render', () => {
+  const Greeting = parsed.find('Greeting').getFn()
+  const { getByTestId } = render(<Greeting greet="FOO" />)
+  fireEvent.click(getByTestId('greet'))
+  expect(screen.getByText('Hello FOO the great')).to.be.ok
+})
+```
+
+## API
+
+### `parseFn(filePath, sandbox?, options?)`
+
+Parse a source file. Returns a chainable `CodeFragment` object.
+
+Aliases: `load`, `parse`
+
+### `parseFnStr(filePath, sourceString, sandbox?, options?)`
+
+Parse a source string instead of a file.
+
+### CodeFragment methods
+
+| Method | Description |
+|--------|-------------|
+| `.find(name)` | Locate a function by name |
+| `.findCallback(name, index)` | Extract a callback from a call expression |
+| `.provide(key, value)` | Inject a dependency by name |
+| `.provide({ key: value, ... })` | Inject multiple dependencies |
+| `.inject(key, value)` | Alias for `provide` |
+| `.stub(path, stubCreator)` | Generate nested stubs from a dot-path string |
+| `.callWith(...args)` | Execute the function with arguments |
+| `.apply(thisArg, ...args)` | Execute with a specific `this` context |
+| `.getFn()` | Return the function without executing it |
+| `.source()` | Return the generated source code |
+| `.print()` | Print the generated source code |
+| `.reset()` | Clear all injected dependencies |
+| `.getProvisions()` | Return all currently injected values |
+| `.getAST()` | Return the raw AST |
+| `.getSandbox()` | Return the sandbox object |
+
+### `Stubs(stubImplementation)`
+
+Factory for creating stubs. Pass `jest.fn` or `sinon.stub`.
+
+Returns `{ createStub, getStubs }` — use `createStub` with `.stub()` and `getStubs()` to access the generated mocks for assertions.
+
+## Works everywhere
+
+Maineffect ships two builds:
+
+- **Node.js** — executes in a `vm` sandbox
+- **Browser** — executes via `eval()`
+
+Because dependencies are stripped at the AST level, there is no module system to hook into. Tests can run in a browser with no bundler, no `node_modules`, no build pipeline.
+
+## Supports
+
+- JavaScript and TypeScript
+- Async/await and Promises
+- Function declarations, expressions, and arrow functions
+- Class methods and React lifecycle methods
+- React hooks and functional components
+- Jest, Mocha/Chai, and Sinon
+
+## Demo
 
 [Watch the video](https://www.youtube.com/playlist?list=PLvTEsBHbZnNGwLD3Uy5YEBaKv417-tJGH)
 
-### Installation
+## Build
 
-	$ npm install maineffectjs
+```
+npx webpack --config webpack.config.js
+```
 
+## Test
 
-### Example #1
-
-**Parse/Load** the file (Do not require or import). **Find** the function you want to test by name and **callWith** arguments.
-
->math.js
-
-	import log from 'logger'
-	
-	const add = (a,b) => a + b
-
->math.test.js
-
-	import { parseFn } from '../maineffect'
-	const math = parseFn(require.resolve('./math'))
-
-	describe('add', () => {
-		it('should return 2 when called with 1, 1', () => {
-			const { result } = math.find('add').callWith(1, 1);
-			expect(result).to.equal(2);
-		})
-	})
-
-
->Here, we wanted to test the **add** function of **math.js**. Generally we import the file into our test and call **add**. However with Maineffect, we parse the raw file, and find the **add** function. Just like finding a `div` element in the DOM. We then call it with our arguments.
-
-#### Advantages
-
-- We can now test private functions. In math.js above we did not even export add.
-- We dot care about dependencies in the test. Like above, we don't even have a ``logger`` module installed.
-
-### Example #2
-**Provide** a variable with any value.
-
->taxes.js
-
-	import log from 'Logger'
-	import getTaxeRate from 'irs'
-
-	const getAmountAfterTaxes = async (amount) => {
-	  log('Inside getTaxes')
-	  const taxRate = await getTaxeRate()
-	  return amount - amount * taxRate
-	}
-
->taxes.test.js
-
-	import { expect } from 'chai'
-	import { parseFn } from '../src/maineffect'
-  
-	const taxes = parseFn(require.resolve('./taxes'))
-
-	describe('getAmountAfterTaxes', () => {
-	    it('should return 50 when called with 100 and a rate of 0.5', async () => {
-          	const { result } = taxes.find('getAmountAfterTaxes')
-                            .provide({
-								log: jest.fn(),
-								getTaxeRate: async () => 0.5
-							})
-                            .callWith(100)
-          	expect(await result).to.equal(50)
-	    })
-	})
-
->Here, we want to test the **getAmountAfterTaxes** function of **taxes.js**. Once we ``find`` the function, we ``provide`` **log** as a jest mock and **getTaxRate** as a function the returns **0.5** and call the function.
-
-#### Advantages
-
-- We can mock dependencies like **log**
-
-### Example #3
-**Stubs** provide a fast way to stub out chained function calls.
-
->greet.js
-
-	const getGreeting = async () => {
-	  const greet = greeter.man('Joe').good().greeting();
-	  return greet;
-	};
-
->greet.test.js
-
-	import { parseFn, Stubs } from '../src/maineffect';
-  
-	const hello = parseFn(require.resolve('./hello'));
-
-	describe('getGreeting', () => {
-	    it('should call man when greeting', async () => {
-			const stubs = Stubs(jest.fn);
-          	hello.find('getGreeting')
-                            .stub('greeter.man().good().greeting()', stubs.createStub)
-                            .callWith();
-          	expect(stubs.getStubs().man).toBeCalledWith("Joe");
-	    });
-	});
-
->Here, we want to test a side-effect. We want to make sure the function ```man``` is called with ```"Joe"```. Instead of stubbing the value with an object that looks like the one below ..
-
-	{
-		greeter: {
-			man: jest.fn().mockReturnValue({
-					good: jest.fn().mockReturnValue({
-						greeting: jest.fn()
-					})
-				})
-		} 
-	}
-
-We can simply simply say this instead ..
-
-	.stub('greeter.man().good().greeting()', stubs.createStub)
-	
->Here the stub function take two arguments, a stub-keys and stub creator function. The stub-keys is simply a string that tells maineffectjs what keys should be stubbed with either an object or a stub. If you want a stub, make sure the key ends with a ```"()"```. The second parameter is a stub creator. This is wrapper for a Sinon ```(sinon.stub)``` or Jest ```(jest.fn)``` implementation of mock functions.
-
-#### Advantages
-
-- Provide stubs to your tests faster and easier.
-- No need to reconstruct the entire fixture in the test and reset.
+```
+npm run test
+```
 
 ## Contributions
 
-### Build
-
-	npx webpack --config webpack.config.js
-
-### Test
-
-	npm run test
+The core library is ~570 lines. Feel free to send a PR with any feature you think would be useful.
 
 ## Contact
 
-Reach out to me at @buzzarvind on Twitter for anything. I'll do my best to help out.
+Reach out to me at @buzzarvind on Twitter.
 
 ## License
 
