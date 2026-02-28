@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 const CACHE = {};
 
-export default function useStaleRefresh(url, defaultValue = []) {
+function useStaleRefresh(url, defaultValue) {
   const [data, setData] = useState(defaultValue);
   const [isLoading, setLoading] = useState(true);
 
@@ -29,3 +29,5 @@ export default function useStaleRefresh(url, defaultValue = []) {
 
   return [data, isLoading];
 }
+
+export default useStaleRefresh;

@@ -12,10 +12,11 @@ const Sandbox = (fileName, state) => {
   const closures = {
     ...state,
   };
+  const sep = (path && path.sep) || "/";
   const namespace = fileName
     .replace(/\./g, "_")
     .replace(/\-/g, "_")
-    .split(path.sep)
+    .split(sep)
     .slice(1)
     .join("_");
 

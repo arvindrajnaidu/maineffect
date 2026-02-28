@@ -1,5 +1,6 @@
 
 const path = require('path');
+const webpack = require('webpack');
 
 const nodeConfig = {
     mode: 'production',
@@ -21,12 +22,6 @@ const nodeConfig = {
         {
           test: /\.m?js$/,
           exclude: /(node_modules|bower_components)/,
-          // use: {
-          //   loader: 'babel-loader',
-          //   options: {
-          //     presets: ['@babel/preset-env']
-          //   }
-          // }
         }
       ]
     }
@@ -35,15 +30,31 @@ const nodeConfig = {
 const clientConfig = {
   ...nodeConfig,
   target: 'web',
+  externals: [],
   output: {
-    ...nodeConfig.output,    
-    filename: 'maineffect.web.js',  
+    ...nodeConfig.output,
+    filename: 'maineffect.web.js',
   },
+  plugins: [
+    new webpack.DefinePlugin({
+      'process.env.IS_WEB': JSON.stringify('true'),
+    }),
+  ],
   resolve: {
     fallback: {
       fs: false,
       vm: false,
-      path: false,
+      path: require.resolve('path-browserify'),
+      module: false,
+      os: false,
+      stream: false,
+      buffer: false,
+      url: false,
+      crypto: false,
+      child_process: false,
+      worker_threads: false,
+      assert: false,
+      util: false,
     }
   }
 }
