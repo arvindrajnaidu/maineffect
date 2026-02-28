@@ -1,6 +1,6 @@
 {
   "name": "maineffectjs",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Dependency Injection for Javascript Functions",
   "main": "dist/maineffect.js",
   "files": [
